@@ -21,6 +21,7 @@ import java.util.List;
 @AllArgsConstructor
 public class ItemController {
     private final ItemService itemsService;
+    private static final String OWNER_ID = "X-Sharer-User-Id";
 
     @GetMapping()
     public List<ItemResponseDto> getAllUserItems(@RequestHeader("X-Sharer-User-Id") int userId) {
@@ -35,32 +36,33 @@ public class ItemController {
     }
 
     @PostMapping(consumes = "application/json;charset=UTF-8", produces = "application/json;")
-    public ItemResponseDto create(@RequestHeader("X-Sharer-User-Id") int userId,
-                                  @Validated(GroupCreate.class) @RequestBody ItemRequestDto itemRequestDtotem)
+    public ItemResponseDto create(@RequestHeader(OWNER_ID) int userId,
+                                  @Validated(GroupCreate.class) @RequestBody ItemRequestDto itemRequestDto)
             throws BadRequestException, ConflictException, NoContentException {
-        log.info("Got Item create request: {}", itemRequestDtotem);
-        return itemsService.createItem(userId, itemRequestDtotem);
+        log.info("Got Item create request: {}", itemRequestDto);
+        return itemsService.createItem(userId, itemRequestDto);
     }
 
     @PatchMapping(path = "/{itemId}", consumes = "application/json;charset=UTF-8", produces = "application/json;")
-    public ItemResponseDto update(@RequestHeader("X-Sharer-User-Id") int userId,
+    public ItemResponseDto update(@RequestHeader(OWNER_ID) int userId,
                                   @PathVariable Integer itemId,
-                                  @Valid @RequestBody ItemRequestDto itemRequestDtotem)
+                                  @Valid @RequestBody ItemRequestDto itemRequestDto)
             throws BadRequestException, NoContentException {
-        log.info("Got update Item id '{}' request: {}", itemId, itemRequestDtotem);
-        return itemsService.updateItem(userId, itemId, itemRequestDtotem);
+        log.info("Got update Item id '{}' request: {}", itemId, itemRequestDto);
+        return itemsService.updateItem(userId, itemId, itemRequestDto);
     }
 
     @DeleteMapping(value = "/{id}", produces = "application/json;")
-    public void delete(@RequestHeader("X-Sharer-User-Id") int userId, @PathVariable Integer id)
+    public void delete(@RequestHeader(OWNER_ID) int userId, @PathVariable Integer id)
             throws BadRequestException {
         log.info("Got delete item {} request", id);
         itemsService.delete(userId, id);
     }
 
     @GetMapping(value = "/search")
-    public List<ItemResponseDto> searchItemByName(@RequestHeader("X-Sharer-User-Id") Integer userId,
-                                                  @RequestParam(value = "text") String text) throws NoContentException {
+    public List<ItemResponseDto> searchItemByName(@RequestHeader(OWNER_ID) Integer userId,
+                                                  @RequestParam(value = "text") String text)
+            throws NoContentException {
         log.info("Got search Item request");
         return itemsService.searchItemByName(userId, text);
     }

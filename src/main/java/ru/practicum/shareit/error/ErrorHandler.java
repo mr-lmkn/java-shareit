@@ -17,7 +17,7 @@ import java.util.Map;
 
 @RestControllerAdvice(annotations = RestController.class)
 public class ErrorHandler {
-    @ResponseStatus(HttpStatus.NOT_FOUND) //INTERNAL_SERVER_ERROR NO_CONTENT - 204
+    @ResponseStatus(HttpStatus.NOT_FOUND)
     @ExceptionHandler(NoContentException.class)
     public Map<String, String> noContentException(final NoContentException e) {
         return Map.of("noContentException", e.getMessage());

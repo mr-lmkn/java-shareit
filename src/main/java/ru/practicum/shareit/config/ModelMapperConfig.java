@@ -11,12 +11,5 @@ public class ModelMapperConfig {
     @Bean
     public ModelMapper modelMapper() {
         return new ModelMapper();
-    /*    Converter<Integer, User> userIdToUserConverter = context -> {
-            try {
-                return userService.getUserById(context.getSource());
-            } catch (NoContentException e) {
-                throw new RuntimeException(e);
-            }
-        }; */
     }
 }

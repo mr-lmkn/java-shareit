@@ -14,12 +14,12 @@ import java.time.LocalDate;
 @NoArgsConstructor
 @AllArgsConstructor
 public class BookingDto {
-    private Integer id;  // уникальный идентификатор бронирования;
+    private Integer id;
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
-    private LocalDate start; //дата и время начала бронирования;
+    private LocalDate start;
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
-    private LocalDate end; //дата и время конца бронирования;
-    private Integer item; // вещь, которую пользователь бронирует;
-    private Integer booker; // пользователь, который осуществляет бронирование;
+    private LocalDate end;
+    private Integer item;
+    private Integer booker;
     private BookingStatus status;
 }

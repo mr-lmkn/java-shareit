@@ -93,11 +93,11 @@ public class UserDaoStorageImpl implements UserStorage {
         String doDo = "обновление пользователя";
         log.info("Инициировано {} {}", doDo, id);
 
-        if (id != null && id > 0) {
+        if (Objects.nonNull(id) && id > 0) {
             Integer updaterRows = dataSource.update(
                     "UPDATE USERS SET "
                             + "     email = CASE WHEN ? is not null THEN ? ELSE email END,"
-                            + "user_name  = CASE WHEN ? is not null THEN ? ELSE user_name END "
+                            + " user_name = CASE WHEN ? is not null THEN ? ELSE user_name END "
                             + " WHERE USER_ID = ?",
                     user.getEmail(),
                     user.getEmail(),
@@ -122,27 +122,27 @@ public class UserDaoStorageImpl implements UserStorage {
     }
 
     @Override
-    public void delete(Integer id) throws BadRequestException {
+    public void delete(Integer userId) throws BadRequestException {
         String doDo = " удаление пользователя";
-        log.info("Инициировано {} {}", doDo, id);
+        log.info("Инициировано {} {}", doDo, userId);
         String msg;
 
-        if (id != null && id > 0) {
+        if (Objects.nonNull(userId)) {
             Integer deleteUserRows = dataSource.update(
                     "DELETE FROM users WHERE user_id = ?",
-                    id);
+                    userId);
 
             if (deleteUserRows > 0) {
-                log.info("Пользователь {} удален", id);
+                log.info("Пользователь {} удален", userId);
                 return;
             } else {
-                msg = String.format("Нет пользователя с ID %s", id);
+                msg = String.format("Нет пользователя с ID %s", userId);
                 log.info(msg);
                 throw new BadRequestException(msg);
             }
         }
 
-        msg = String.format("Не указан 'id' %s. Удаление не возможно.", id);
+        msg = String.format("Не указан 'id' %s. Удаление не возможно.", userId);
         log.info(msg);
         throw new BadRequestException(msg);
     }

@@ -17,12 +17,10 @@ import javax.validation.constraints.NotBlank;
 @AllArgsConstructor
 @NoArgsConstructor
 public class UserRequestDto {
-    //целочисленный идентификатор
     @Min(value = 1, message = "id должен быть > 1")
     @Nullable()
     private Integer id;
 
-    //электронная почта
     @Email(groups = {GroupCreate.class, GroupUpdate.class},
             regexp = "^[\\w!#$%&amp;'*+/=?`{|}~^-]+"
             + "(?:\\.[\\w!#$%&amp;'*+/=?`{|}~^-]+)*@"
@@ -31,6 +29,5 @@ public class UserRequestDto {
     @NotBlank(groups = {GroupCreate.class}, message = "Поле 'E-mail' не заполнено")
     private String email;
 
-    // имя для отображения
     private String name;
 }

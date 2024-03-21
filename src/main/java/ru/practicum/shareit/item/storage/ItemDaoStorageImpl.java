@@ -11,10 +11,7 @@ import ru.practicum.shareit.error.exceptions.ConflictException;
 import ru.practicum.shareit.error.exceptions.NoContentException;
 import ru.practicum.shareit.item.model.Item;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Slf4j
 @Repository
@@ -76,11 +73,10 @@ public class ItemDaoStorageImpl implements ItemStorage {
 
     @Override
     public Item updateItem(Integer itemId, Item item) throws BadRequestException, NoContentException {
-        //Integer id = item.getId();
         String doDo = "обновление вещи";
         log.info("Инициировано {} {}", doDo, itemId);
 
-        if (itemId != null && itemId > 0) {
+        if (Objects.nonNull(itemId) && itemId > 0) {
             Integer updaterRows = dataSource.update(
                     "UPDATE items SET "
                             + "     item_name = CASE WHEN ? is not null THEN ? ELSE item_name END,"
@@ -114,28 +110,28 @@ public class ItemDaoStorageImpl implements ItemStorage {
     }
 
     @Override
-    public void delete(Integer userid, Integer id) throws BadRequestException {
+    public void delete(Integer userid, Integer itemId) throws BadRequestException {
         String doDo = " удаление вещи ";
-        log.info("Инициировано {} {} пользователя {}", doDo, id, userid);
+        log.info("Инициировано {} {} пользователя {}", doDo, itemId, userid);
         String msg;
 
-        if (id != null && id > 0) {
-            Integer deleteUserRows = dataSource.update(
+        if (Objects.nonNull(itemId)) {
+            Integer deleteRows = dataSource.update(
                     "DELETE FROM items WHERE item_id = ? and owner_user_id = ? ",
-                    id,
+                    itemId,
                     userid);
 
-            if (deleteUserRows > 0) {
-                log.info("Вещь {} удален", id);
+            if (deleteRows > 0) {
+                log.info("Вещь {} удалена", itemId);
                 return;
             } else {
-                msg = String.format("Нет вещи с ID %s", id);
+                msg = String.format("У пользователя %s нет вещи с itemId %s", userid, itemId);
                 log.info(msg);
                 throw new BadRequestException(msg);
             }
         }
 
-        msg = String.format("Не указан 'id' %s. Удаление не возможно.", id);
+        msg = String.format("Не указан 'id' %s. Удаление не возможно.", itemId);
         log.info(msg);
         throw new BadRequestException(msg);
     }
@@ -145,11 +141,9 @@ public class ItemDaoStorageImpl implements ItemStorage {
         List outList = new ArrayList<>();
         SqlRowSet qryRows = dataSource.queryForRowSet(
                 "SELECT * FROM items "
-                        + " WHERE " //owner_user_id = ? "
-                        + "       available = true "
+                        + " WHERE available = true "
                         + "   AND (    lower(item_name) like '%'||?||'%' "
                         + "         OR lower(description) like '%'||?||'%') ",
-                // userId,
                 text.toLowerCase(),
                 text.toLowerCase());
 

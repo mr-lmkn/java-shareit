@@ -24,7 +24,6 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public List<UserResponseDto> getAllUsers() {
-        //
         log.info("Зарос всех пользователей");
         return users.getAllUsers().stream()
                 .map(p -> modelMapper.map(p, UserResponseDto.class))
@@ -48,7 +47,6 @@ public class UserServiceImpl implements UserService {
     public UserResponseDto updateUser(Integer id, UserRequestDto userRequestDto) throws BadRequestException, NoContentException {
         log.info("Зарос обновления пользователя");
         User user = modelMapper.map(userRequestDto, User.class);
-        //User user = UserDtoMapper.toUser(userRequestDto);
         user.setId(id);
         return modelMapper.map(users.updateUser(user), UserResponseDto.class);
     }
