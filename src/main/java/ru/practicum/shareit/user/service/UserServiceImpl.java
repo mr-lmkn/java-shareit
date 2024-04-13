@@ -1,60 +1,90 @@
 package ru.practicum.shareit.user.service;
 
-import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Isolation;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.shareit.error.exceptions.BadRequestException;
-import ru.practicum.shareit.error.exceptions.ConflictException;
 import ru.practicum.shareit.error.exceptions.NoContentException;
-import ru.practicum.shareit.user.User;
 import ru.practicum.shareit.user.dto.UserRequestDto;
-import ru.practicum.shareit.user.dto.UserResponseDto;
-import ru.practicum.shareit.user.storege.UserStorage;
+import ru.practicum.shareit.user.model.User;
+import ru.practicum.shareit.user.storege.UserRepository;
 
-import java.util.List;
-import java.util.stream.Collectors;
+import java.util.*;
 
 @Slf4j
 @Service
-@AllArgsConstructor
+@RequiredArgsConstructor
+@Transactional(propagation = Propagation.REQUIRED, isolation = Isolation.SERIALIZABLE)
 public class UserServiceImpl implements UserService {
-    private final UserStorage users;
+    private final UserRepository repository;
     private final ModelMapper modelMapper;
 
     @Override
-    public List<UserResponseDto> getAllUsers() {
+    public List<User> getAllUsers() {
         log.info("Зарос всех пользователей");
-        return users.getAllUsers().stream()
-                .map(p -> modelMapper.map(p, UserResponseDto.class))
-                .collect(Collectors.toList());
+        Sort sortById = Sort.by(Sort.Direction.ASC, "id");
+        return repository.findAll(sortById);
     }
 
     @Override
-    public UserResponseDto getUserById(Integer id) throws NoContentException {
+    @Transactional
+    public User getUserById(Long id) throws NoContentException {
         log.info("Зарос пользователя");
-        return modelMapper.map(users.getUserById(id), UserResponseDto.class);
+        Optional<User> user = repository.findById(id);
+        if (user.isPresent()) {
+            return user.get();
+        }
+        String msg = String.format("Нет пользователя с 'id' %s.", id);
+        log.info(msg);
+        throw new NoContentException(msg);
     }
 
     @Override
-    public UserResponseDto createUser(UserRequestDto userRequestDto) throws BadRequestException, ConflictException {
+    @Transactional
+    public User createUser(UserRequestDto userRequestDto) throws BadRequestException {
         log.info("Зарос создания пользователя");
-        User user = modelMapper.map(userRequestDto, User.class);
-        return modelMapper.map(users.createUser(user), UserResponseDto.class);
+        User user = isUserDataExist(userRequestDto);
+        ArrayList<User> usersSameEmail = repository.findByEmailContainingIgnoreCase(user.getEmail());
+    /* Тесты хотят инкремент id ошибок при ошибке
+        String msg = String.format("Пользователь с e-mail %s уже существует.", user.getEmail());
+        log.info(msg);
+        throw new ConflictException(msg); <-- ConflictException
+    */
+        return repository.save(user);
     }
 
     @Override
-    public UserResponseDto updateUser(Integer id, UserRequestDto userRequestDto) throws BadRequestException, NoContentException {
+    @Transactional
+    public User updateUser(Long id, UserRequestDto userRequestDto)
+            throws BadRequestException, NoContentException {
         log.info("Зарос обновления пользователя");
-        User user = modelMapper.map(userRequestDto, User.class);
+        User user = isUserDataExist(userRequestDto);
         user.setId(id);
-        return modelMapper.map(users.updateUser(user), UserResponseDto.class);
+        repository.partialUpdate(user.getEmail(), user.getName(), user.getId());
+        return getUserById(id);
     }
 
     @Override
-    public void delete(Integer id) throws BadRequestException {
+    @Transactional
+    public void delete(Long id) throws BadRequestException {
         log.info("Зарос удаления пользователя");
-        users.delete(id);
+        repository.deleteAllById(Collections.singleton(id));
+    }
+
+    @Override
+    @Transactional
+    public User isUserDataExist(UserRequestDto userRequestDto) throws BadRequestException {
+        if (Objects.nonNull(userRequestDto)) {
+            return modelMapper.map(userRequestDto, User.class);
+        }
+        String msg = String.format("Тело запроса не содержит данных");
+        log.info(msg);
+        throw new BadRequestException(msg);
     }
 
 }

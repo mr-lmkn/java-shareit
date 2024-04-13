@@ -4,18 +4,20 @@ import ru.practicum.shareit.error.exceptions.BadRequestException;
 import ru.practicum.shareit.error.exceptions.ConflictException;
 import ru.practicum.shareit.error.exceptions.NoContentException;
 import ru.practicum.shareit.user.dto.UserRequestDto;
-import ru.practicum.shareit.user.dto.UserResponseDto;
+import ru.practicum.shareit.user.model.User;
 
 import java.util.List;
 
 public interface UserService {
-    List<UserResponseDto> getAllUsers();
+    List<User> getAllUsers();
 
-    UserResponseDto getUserById(Integer id) throws NoContentException;
+    User getUserById(Long id) throws NoContentException;
 
-    UserResponseDto createUser(UserRequestDto user) throws BadRequestException, ConflictException;
+    User createUser(UserRequestDto user) throws BadRequestException, ConflictException, NoContentException;
 
-    UserResponseDto updateUser(Integer id, UserRequestDto user) throws BadRequestException, NoContentException;
+    User updateUser(Long id, UserRequestDto user) throws BadRequestException, NoContentException;
 
-    void delete(Integer id) throws BadRequestException;
+    void delete(Long id) throws BadRequestException;
+
+    User isUserDataExist(UserRequestDto userRequestDto) throws BadRequestException;
 }

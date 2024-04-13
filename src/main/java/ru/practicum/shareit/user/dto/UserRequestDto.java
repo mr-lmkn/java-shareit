@@ -19,15 +19,15 @@ import javax.validation.constraints.NotBlank;
 public class UserRequestDto {
     @Min(value = 1, message = "id должен быть > 1")
     @Nullable()
-    private Integer id;
+    private Long id;
 
     @Email(groups = {GroupCreate.class, GroupUpdate.class},
             regexp = "^[\\w!#$%&amp;'*+/=?`{|}~^-]+"
-            + "(?:\\.[\\w!#$%&amp;'*+/=?`{|}~^-]+)*@"
-            + "(?:[a-zA-Z0-9-]+\\.)+[a-zA-Z]{2,6}$",
+                    + "(?:\\.[\\w!#$%&amp;'*+/=?`{|}~^-]+)*@"
+                    + "(?:[a-zA-Z0-9-]+\\.)+[a-zA-Z]{2,6}$",
             message = "Поле e-mail должно содержать валидный адрес")
     @NotBlank(groups = {GroupCreate.class}, message = "Поле 'E-mail' не заполнено")
     private String email;
-
+    @NotBlank(groups = {GroupCreate.class}, message = "Поле 'name' не заполнено")
     private String name;
 }
