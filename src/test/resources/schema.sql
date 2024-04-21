@@ -64,9 +64,3 @@ CREATE TABLE IF NOT EXISTS public.requests
 	    FOREIGN KEY (requester_id) REFERENCES public.users (user_id)
         ON DELETE CASCADE
 );
-
-/*
-insert into users (user_id, email, user_name) values (1,'updateName@user.com','updateName');
-insert into users (user_id, email, user_name) values (4,'user@user.com','user');
-insert into users (user_id, email, user_name) values (5,'other@other.com','other');
-insert into users (user_id, email, user_name) values (6,'practicum@yandex.ru','practicum');*/
