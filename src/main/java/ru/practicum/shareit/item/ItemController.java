@@ -16,7 +16,10 @@ import ru.practicum.shareit.item.dto.ItemResponseDto;
 import ru.practicum.shareit.item.service.ItemService;
 
 import javax.validation.Valid;
+import javax.validation.constraints.Min;
+import javax.validation.constraints.Positive;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -29,10 +32,16 @@ public class ItemController {
     private static final String OWNER_ID_HOLDER = "X-Sharer-User-Id";
 
     @GetMapping()
-    public List<ItemResponseDto> getAllUserItems(@RequestHeader(OWNER_ID_HOLDER) long userId)
-            throws NoContentException {
+    public List<ItemResponseDto> getAllUserItems(
+            @RequestHeader(OWNER_ID_HOLDER) long userId,
+            @RequestParam(value = "from", required = false)
+            @Min(value = 0, message = "The value must be positive")
+            Optional<Integer> from,
+            @Positive
+            @RequestParam(value = "size", required = false) Optional<Integer> size
+    ) throws NoContentException {
         log.info("Got all Items request");
-        return itemsService.getAllUserItems(userId).stream()
+        return itemsService.getAllUserItems(userId, from, size).stream()
                 .map(item -> modelMapper.map(item, ItemResponseDto.class))
                 .collect(Collectors.toList());
     }
@@ -72,10 +81,17 @@ public class ItemController {
     }
 
     @GetMapping(value = "/search")
-    public List<ItemResponseDto> searchItemByName(@RequestHeader(OWNER_ID_HOLDER) long userId,
-                                                  @RequestParam(value = "text") String text) {
+    public List<ItemResponseDto> searchItemByName(
+            @RequestHeader(OWNER_ID_HOLDER) long userId,
+            @RequestParam(value = "text") String text,
+            @RequestParam(value = "from", required = false)
+            @Min(value = 0, message = "The value must be positive")
+            Optional<Integer> from,
+            @Positive
+            @RequestParam(value = "size", required = false) Optional<Integer> size
+    ) {
         log.info("Got search Item request");
-        return itemsService.searchItemByName(userId, text).stream()
+        return itemsService.searchItemByName(userId, text, from, size).stream()
                 .map(item -> modelMapper.map(item, ItemResponseDto.class))
                 .collect(Collectors.toList());
     }

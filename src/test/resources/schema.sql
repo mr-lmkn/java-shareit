@@ -65,12 +65,8 @@ CREATE TABLE IF NOT EXISTS public.requests
         ON DELETE CASCADE
 );
 
-
 /*
-
-TRUNCATE TABLE items RESTART IDENTITY CASCADE;
-TRUNCATE TABLE users RESTART IDENTITY CASCADE;
-TRUNCATE TABLE bookings RESTART IDENTITY CASCADE;
-TRUNCATE TABLE comments RESTART IDENTITY CASCADE;
-
-*/
+insert into users (user_id, email, user_name) values (1,'updateName@user.com','updateName');
+insert into users (user_id, email, user_name) values (4,'user@user.com','user');
+insert into users (user_id, email, user_name) values (5,'other@other.com','other');
+insert into users (user_id, email, user_name) values (6,'practicum@yandex.ru','practicum');*/

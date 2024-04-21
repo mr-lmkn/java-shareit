@@ -30,5 +30,7 @@ public class ItemRequestDto {
     private Boolean available;
     @Min(value = 1, message = "id должен быть > 1")
     @Nullable
-    private Long request;
+    private Long requestId;
+   // @Nullable
+   // private RequestItem item;
 }

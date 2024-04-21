@@ -8,6 +8,7 @@ import ru.practicum.shareit.error.exceptions.NoContentException;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 public interface BookingService {
     Booking getById(Long bookingId) throws NoContentException, BadRequestException;
@@ -19,7 +20,7 @@ public interface BookingService {
 
     Booking getFromBookerOrOwner(long userId, long bookingId) throws BadRequestException, NoContentException;
 
-    List<Booking> getFromUserByRequest(long userId, String state, Boolean ownerOnly)
+    List<Booking> getFromUserByRequest(long userId, String state, Boolean ownerOnly, Optional<Integer> from, Optional<Integer> size)
             throws BadRequestException, NoContentException;
 
     // List<Booking> getAllBookingsByItemIdOrderByEndAsc(Item item, BookingStatus bs);

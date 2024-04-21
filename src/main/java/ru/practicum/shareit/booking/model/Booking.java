@@ -11,7 +11,6 @@ import ru.practicum.shareit.user.model.User;
 
 import javax.persistence.*;
 import java.time.LocalDateTime;
-import java.util.Objects;
 
 
 @Data
@@ -21,7 +20,7 @@ import java.util.Objects;
 @DynamicUpdate
 @NoArgsConstructor
 @AllArgsConstructor
-public class Booking implements Comparable<Booking> {
+public class Booking /*implements Comparable<Booking>*/ {
     @Id
     @Column(name = "booking_id")
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -42,7 +41,7 @@ public class Booking implements Comparable<Booking> {
     public Long getItemId() {
         return item.getId();
     }
-
+/*
     @Override
     public int compareTo(Booking o) {
         if (Objects.isNull(this.getStart()) || Objects.isNull(this.getEnd())) return -1;
@@ -51,4 +50,5 @@ public class Booking implements Comparable<Booking> {
         if (this.getStart().equals(o.getStart())) return 0;
         return 1;
     }
+ */
 }

@@ -66,6 +66,30 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
             @Param("owner_Only") Boolean ownerOnly
     );
 
+    @Query(value = "SELECT b.* \n"
+            + "       FROM bookings b\n"
+            + "  LEFT JOIN items i \n"
+            + "         ON i.item_id = b.item_id  \n"
+            + "      WHERE (    (b.booker_user_id = :user_id and :owner_Only = false)\n"
+            + "              OR (i.owner_user_id  = :user_id and :owner_Only = true)) \n"
+            + "        AND (   :state = 'ALL' \n"
+            + "              OR ( :state = 'CURRENT'  and now() BETWEEN b.date_from AND b.date_end ) \n"
+            + "              OR ( :state = 'FUTURE'   and now() < b.date_from ) \n"
+            + "              OR ( :state = 'PAST'     and now() > b.date_end ) \n"
+            + "              OR ( :state = 'WAITING'  and b.status_id = 0 ) \n"
+            + "              OR ( :state = 'REJECTED' and b.status_id = 2)  \n"
+            + "            ) \n"
+            + "      ORDER BY date_end DESC"
+            + " LIMIT :size OFFSET :from",
+            nativeQuery = true)
+    List<Booking> getFromUserByStatePage(
+            @Param("user_id") long userId,
+            @Param("state") String state,
+            @Param("owner_Only") Boolean ownerOnly,
+            @Param("from") Integer from,
+            @Param("size") Integer size
+    );
+
     @Query(value = "SELECT b.* \n "
             + "      FROM bookings as b \n "
             + "      JOIN items as i "

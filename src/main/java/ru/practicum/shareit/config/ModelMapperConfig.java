@@ -9,6 +9,7 @@ import org.springframework.context.annotation.Configuration;
 import ru.practicum.shareit.item.comment.dto.ItemCommentResponseDto;
 import ru.practicum.shareit.item.comment.model.ItemComment;
 import ru.practicum.shareit.item.model.Item;
+import ru.practicum.shareit.request.model.RequestItem;
 import ru.practicum.shareit.user.model.User;
 
 import java.time.LocalDateTime;
@@ -28,6 +29,12 @@ public class ModelMapperConfig {
         });
         mapper.addConverter(new Converter<Item, Long>() {
             public Long convert(MappingContext<Item, Long> context) {
+                return context.getSource() == null ? null : context.getSource().getId();
+            }
+        });
+
+        mapper.addConverter(new Converter<RequestItem, Long>() {
+            public Long convert(MappingContext<RequestItem, Long> context) {
                 return context.getSource() == null ? null : context.getSource().getId();
             }
         });

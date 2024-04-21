@@ -23,6 +23,7 @@ import javax.persistence.EntityManager;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 
 @Slf4j
 @Repository
@@ -120,25 +121,26 @@ public class BookingServiceImpl implements BookingService {
 
     @Override
     @Transactional
-    public List<Booking> getFromUserByRequest(long userId, String state, Boolean ownerOnly)
-            throws BadRequestException, NoContentException {
+    public List<Booking> getFromUserByRequest(
+            long userId, String state, Boolean ownerOnly,
+            Optional<Integer> from,
+            Optional<Integer> size
+    ) throws BadRequestException, NoContentException {
         User user = userService.getUserById(userId);
         String strState = String.valueOf(BookingRequestStatus.getValue(state));
-        return bookingRepository.getFromUserByState(userId, strState, ownerOnly);
+        if (from.isEmpty() || size.isEmpty()) {
+            return bookingRepository.getFromUserByState(userId, strState, ownerOnly);
+        } else if (from.get() > 0 && size.get() > 0) {
+            return bookingRepository.getFromUserByStatePage(userId, strState, ownerOnly, from.get(), size.get());
+        }
+        throw new BadRequestException("Нет такой страницы");
     }
 
-    /*
-        @Override
-        @Transactional
-        public List<Booking> getAllBookingsByItemIdOrderByEndAsc(Item item, BookingStatus bs) {
-                return bookingRepository.findAllByItemAndStatusOrderByEndAsc(item,bs);
-        }
-    */
     @Override
     @Transactional
     public boolean isBookingAvailable(Long itemId, LocalDateTime start, LocalDateTime end) {
         boolean isAllowed = bookingRepository.isBookingAvailable(itemId, start, end);
-        String msg = String.format("Обронь %s - %s вещь id{%s} свободна: {%s} ", start, end, itemId, isAllowed);
+        String msg = String.format("Бронь %s - %s вещь id{%s} свободна: {%s} ", start, end, itemId, isAllowed);
         log.info(msg);
         return isAllowed;
     }

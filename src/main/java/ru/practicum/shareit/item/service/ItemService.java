@@ -10,13 +10,19 @@ import ru.practicum.shareit.item.comment.model.ItemComment;
 import ru.practicum.shareit.item.dto.ItemRequestDto;
 import ru.practicum.shareit.item.model.Item;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 public interface ItemService {
 
-    List<Item> getAllUserItems(Long userId) throws NoContentException;
+    List<Item> getAllUserItems(Long userId, Optional<Integer> from, Optional<Integer> size) throws NoContentException;
 
     Item getItemById(Long id, Long userId) throws NoContentException;
+
+    ArrayList<Item> getAllByRequestId(Long requestId);
+
+    ArrayList<Item> getAllByRequestIdNotNull();
 
     @Transactional
     Item setBookings(Item item, List<Booking> bookings);
@@ -27,7 +33,7 @@ public interface ItemService {
 
     void delete(Long userId, Long id) throws BadRequestException;
 
-    List<Item> searchItemByName(Long userId, String text);
+    List<Item> searchItemByName(Long userId, String text, Optional<Integer> from, Optional<Integer> size);
 
     ItemComment addComment(Long userId, ItemCommentRequestDto inComment, Long itemId)
             throws NoContentException, BadRequestException;

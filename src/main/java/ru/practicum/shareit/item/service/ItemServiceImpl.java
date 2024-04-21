@@ -3,6 +3,8 @@ package ru.practicum.shareit.item.service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Propagation;
@@ -19,10 +21,11 @@ import ru.practicum.shareit.item.comment.storage.CommentRepository;
 import ru.practicum.shareit.item.dto.ItemRequestDto;
 import ru.practicum.shareit.item.model.Item;
 import ru.practicum.shareit.item.storage.ItemRepository;
+import ru.practicum.shareit.request.model.RequestItem;
+import ru.practicum.shareit.request.storage.RequestRepository;
 import ru.practicum.shareit.user.model.User;
 import ru.practicum.shareit.user.service.UserService;
 
-import javax.persistence.EntityManager;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -35,17 +38,27 @@ import static ru.practicum.shareit.booking.enums.BookingStatus.APPROVED;
 @RequiredArgsConstructor
 @Transactional(propagation = Propagation.REQUIRED, isolation = Isolation.SERIALIZABLE)
 public class ItemServiceImpl implements ItemService {
-    private final EntityManager entityManager;
     private final ItemRepository itemRepository;
     private final UserService userService;
     private final CommentRepository commentsRepository;
     private final BookingRepository bookingRepository;
+    private final RequestRepository requestRepository;
     private final ModelMapper modelMapper;
 
     @Override
     @Transactional
-    public List<Item> getAllUserItems(Long ownerId) throws NoContentException {
-        ArrayList<Item> itemsList = itemRepository.findAllByOwnerOrderByIdAsc(userService.getUserById(ownerId));
+    public List<Item> getAllUserItems(
+            Long ownerId,
+            Optional<Integer> from,
+            Optional<Integer> size
+    ) throws NoContentException {
+        ArrayList<Item> itemsList;
+        if (from.isPresent() && size.isPresent()) {
+            PageRequest page = PageRequest.of(from.get(), size.get(), Sort.by("created").descending());
+            itemsList = itemRepository.findAllByOwner(userService.getUserById(ownerId), page);
+        } else {
+            itemsList = itemRepository.findAllByOwnerOrderByIdAsc(userService.getUserById(ownerId));
+        }
 
         List<Long> idList = itemsList.stream()
                 .map(Item::getId)
@@ -103,6 +116,16 @@ public class ItemServiceImpl implements ItemService {
     }
 
     @Override
+    public ArrayList<Item> getAllByRequestId(Long requestId) {
+        return itemRepository.findAllByRequestId(requestId);
+    }
+
+    @Override
+    public ArrayList<Item> getAllByRequestIdNotNull() {
+        return itemRepository.findAllByRequestIdNotNull();
+    }
+
+    @Override
     @Transactional
     public Item setBookings(Item item, List<Booking> bookings) {
         log.info(" setBookings ---> ComeIn ");
@@ -132,20 +155,29 @@ public class ItemServiceImpl implements ItemService {
     }
 
     @Override
-    public Item createItem(Long userID, ItemRequestDto itemRequestDto)
+    @Transactional
+    public Item createItem(Long userId, ItemRequestDto itemRequestDto)
             throws BadRequestException, NoContentException {
         if (Objects.nonNull(itemRequestDto)) {
-            User user = userService.getUserById(userID);
+            User user = userService.getUserById(userId);
             if (Objects.nonNull(user)) {
+                log.info(" Запрос на создание вещи: {}", itemRequestDto.toString());
                 Item item = modelMapper.map(itemRequestDto, Item.class);
                 item.setOwner(user);
+                if (Objects.nonNull(itemRequestDto.getRequestId())) {
+                    long requestId = itemRequestDto.getRequestId();
+                    RequestItem requestItem = requestRepository.getById(requestId);
+                    String msg = String.format(" Создается вещь по запросу %s", requestId);
+                    log.info(msg);
+                    item.setRequestId(requestId);
+                }
                 return itemRepository.save(item);
             }
-            String msg = String.format("Нет пользователя с 'id' %s.", userID);
+            String msg = String.format("Нет пользователя с 'id' %s.", userId);
             log.info(msg);
             throw new NoContentException(msg);
         }
-        String msg = String.format("Нет тела запроса", userID);
+        String msg = String.format("Нет тела запроса от %s", userId);
         log.info(msg);
         throw new BadRequestException(msg);
     }
@@ -186,11 +218,18 @@ public class ItemServiceImpl implements ItemService {
 
     @Override
     @Transactional
-    public List<Item> searchItemByName(Long userId, String text) {
-        if (text.isEmpty()) {
-            return new ArrayList<>();
+    public List<Item> searchItemByName(
+            Long userId, String text,
+            Optional<Integer> from,
+            Optional<Integer> size
+    ) {
+        if (!text.isEmpty() && (from.isEmpty() || size.isEmpty())) {
+            return itemRepository.findUserItemLike(text, text);
+
+        } else if (!text.isEmpty() && from.isPresent() && size.isPresent()) {
+            return itemRepository.findUserItemLikePage(text, text, from.get(), size.get());
         }
-        return itemRepository.findUserItemLike(text, text);
+        return new ArrayList<>();
     }
 
     @Override

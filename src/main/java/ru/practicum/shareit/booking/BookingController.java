@@ -11,7 +11,10 @@ import ru.practicum.shareit.error.exceptions.BadRequestException;
 import ru.practicum.shareit.error.exceptions.NoContentException;
 
 import javax.validation.Valid;
+import javax.validation.constraints.Min;
+import javax.validation.constraints.Positive;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -52,22 +55,35 @@ public class BookingController {
     }
 
     @GetMapping()
-    public List<BookingResponseDto> getFromUserByRequest(@RequestHeader(OWNER_ID_HOLDER) long userId,
-                                                         @RequestParam(value = "state", required = false) String state)
-            throws NoContentException, BadRequestException {
-        log.info("Got booking by state request from userId = {}, state = {}", userId, state);
-        return bookingService.getFromUserByRequest(userId, state, false)
+    public List<BookingResponseDto> getFromUser(
+            @RequestHeader(OWNER_ID_HOLDER) long userId,
+            @RequestParam(value = "state", required = false) String state,
+            @RequestParam(value = "from", required = false)
+            @Min(value = 0, message = "The value must be positive")
+            Optional<Integer> from,
+            @Positive
+            @RequestParam(value = "size", required = false) Optional<Integer> size
+    ) throws NoContentException, BadRequestException {
+        log.info("Got booking by state request from userId = {}, state = {}, from = {}, size = {}",
+                userId, state, from, size);
+        return bookingService.getFromUserByRequest(userId, state, false, from, size)
                 .stream()
                 .map(Booking -> modelMapper.map(Booking, BookingResponseDto.class))
                 .collect(Collectors.toList());
     }
 
     @GetMapping(path = "/owner")
-    public List<BookingResponseDto> getFromOwnerByReqest(@RequestHeader(OWNER_ID_HOLDER) long userId,
-                                                         @RequestParam(value = "state", required = false) String state)
-            throws NoContentException, BadRequestException {
+    public List<BookingResponseDto> getFromOwner(
+            @RequestHeader(OWNER_ID_HOLDER) long userId,
+            @RequestParam(value = "state", required = false) String state,
+            @RequestParam(value = "from", required = false)
+            @Min(value = 0, message = "The value must be positive")
+            Optional<Integer> from,
+            @Positive
+            @RequestParam(value = "size", required = false) Optional<Integer> size
+    ) throws NoContentException, BadRequestException {
         log.info("Got booking by state request from owner id = {}, state = {}", userId, state);
-        return bookingService.getFromUserByRequest(userId, state, true)
+        return bookingService.getFromUserByRequest(userId, state, true, from, size)
                 .stream()
                 .map(Booking -> modelMapper.map(Booking, BookingResponseDto.class))
                 .collect(Collectors.toList());
