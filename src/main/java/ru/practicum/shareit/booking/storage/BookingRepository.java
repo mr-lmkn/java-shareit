@@ -97,12 +97,12 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
             + "     WHERE b.booker_user_id = :user_id \n "
             + "       AND i.item_id = :item_id \n "
             + "       AND b.status_id = 1 \n "
-            + "       AND b.date_end < :date_x \n ",
+            + "       AND b.date_end < now() ", //:date_x \n ",
             nativeQuery = true)
     List<Booking> findAllByUserBookings(
             @Param("user_id") long userId,
-            @Param("item_id") long itemId,
-            @Param("date_x") LocalDateTime dateX
+            @Param("item_id") long itemId
+         //   @Param("date_x") LocalDateTime dateX
     );
 
     List<Booking> findAllByItemInAndStatusOrderByStartAsc(List<Item> item, BookingStatus status);

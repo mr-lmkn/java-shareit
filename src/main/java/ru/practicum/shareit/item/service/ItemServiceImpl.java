@@ -243,7 +243,7 @@ public class ItemServiceImpl implements ItemService {
         itemComment.setItem(item);
         itemComment.setAuthor(user);
 
-        List<Booking> userBookings = bookingRepository.findAllByUserBookings(userId, itemId, LocalDateTime.now());
+        List<Booking> userBookings = bookingRepository.findAllByUserBookings(userId, itemId/*, LocalDateTime.now()*/);
         if (userBookings.isEmpty()) {
             String msg = String.format("У user_id = {%s} нечего комментировать", userId);
             log.info(msg);
