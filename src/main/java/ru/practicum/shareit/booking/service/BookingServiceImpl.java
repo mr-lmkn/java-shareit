@@ -151,9 +151,11 @@ public class BookingServiceImpl implements BookingService {
         Long ownerId = booking.getItem().getOwner().getId();
         Long bookerId = booking.getBooker().getId();
         boolean bState;
-        try {
-            bState = Boolean.parseBoolean(state);
-        } catch (Exception e) {
+        if (state.equalsIgnoreCase("true")) {
+            bState = true;
+        } else if (state.equalsIgnoreCase("false")) {
+            bState = false;
+        } else {
             String msg = String.format("Unknown state: %s", state);
             log.info(msg);
             throw new NoContentException(msg);

@@ -10,11 +10,12 @@ import org.modelmapper.ModelMapper;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import ru.practicum.shareit.booking.storage.BookingRepository;
+import ru.practicum.shareit.error.exceptions.BadRequestException;
+import ru.practicum.shareit.error.exceptions.NoContentException;
 import ru.practicum.shareit.item.comment.storage.CommentRepository;
-import ru.practicum.shareit.item.dto.ItemRequestDto;
-import ru.practicum.shareit.item.model.Item;
 import ru.practicum.shareit.item.service.ItemService;
 import ru.practicum.shareit.item.storage.ItemRepository;
+import ru.practicum.shareit.request.dto.RequestItemRequestDto;
 import ru.practicum.shareit.request.model.RequestItem;
 import ru.practicum.shareit.request.storage.RequestRepository;
 import ru.practicum.shareit.user.model.User;
@@ -24,6 +25,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -48,9 +50,8 @@ class RequestServiceImplTest {
 
     private long id = 1L;
     private User user = User.builder().id(id).email("xxx@mm.eee").build();
-    private Item itemModel = Item.builder().id(1L).owner(user).available(true).build();
     private RequestItem requestItem = RequestItem.builder().description("x").build();
-    private ItemRequestDto itemRequestDto = ItemRequestDto.builder().owner(id).id(id).available(true).build();
+    private RequestItemRequestDto itemRequestDto = RequestItemRequestDto.builder().build();
 
 
     @Test
@@ -65,17 +66,6 @@ class RequestServiceImplTest {
 
         List<RequestItem> ret = requestService.getAll(id, Optional.empty(), Optional.empty());
         assertEquals(wait.get(0).getDescription(), ret.get(0).getDescription());
-        /*
-        *  List<User> user = Collections.singletonList(userService.getUserById(userId));
-        List<RequestItem> returnItems;
-        if (from.isPresent() && size.isPresent()) {
-            PageRequest page = PageRequest.of(from.get(), size.get(), Sort.by("created").descending());
-            returnItems = requestRepository.findAllByRequesterNotIn(user, page);
-        } else {
-            returnItems = requestRepository.findAllByRequesterNotInOrderByCreated(user);
-        }
-        returnItems = setLinkedItems(returnItems);
-        return returnItems;*/
     }
 
     @Test
@@ -97,18 +87,40 @@ class RequestServiceImplTest {
     }
 
     @Test
-    void getById() {
-  /*      User user = userService.getUserById(userId);
-        Optional<RequestItem> outModel = requestRepository.findById(id);
-        if (outModel.isPresent()) {
-            ArrayList<Item> itemList = itemService.getAllByRequestId(id);
-            outModel.get().setItems(itemList);
-            return outModel.get();
-        }
-        throw new NoContentException("Нет вещи");*/
+    @SneakyThrows
+    void getById_ok() {
+        when(userService.getUserById(id)).thenReturn(user);
+        when(requestRepository.findById(id)).thenReturn(Optional.of(requestItem));
+        assertEquals(requestItem.getDescription(), requestService.getById(id, id).getDescription());
     }
 
     @Test
-    void create() {
+    @SneakyThrows
+    void getById_err() {
+        when(userService.getUserById(id)).thenReturn(user);
+        when(requestRepository.findById(id)).thenReturn(Optional.empty());
+        assertThrows(NoContentException.class, () -> requestService.getById(id, id).getDescription());
+    }
+
+    @Test
+    @SneakyThrows
+    void create_ok() {
+        when(userService.getUserById(id)).thenReturn(user);
+        when(modelMapper.map(itemRequestDto, RequestItem.class)).thenReturn(requestItem);
+        when(requestRepository.save(requestItem)).thenReturn(requestItem);
+        assertEquals(requestItem, requestService.create(id, itemRequestDto));
+    }
+
+    @Test
+    @SneakyThrows
+    void create_no_user_err() {
+        when(userService.getUserById(id)).thenReturn(null);
+        assertThrows(NoContentException.class, () -> requestService.create(id, itemRequestDto));
+    }
+
+    @Test
+    @SneakyThrows
+    void create_no_data_err() {
+        assertThrows(BadRequestException.class, () -> requestService.create(id, null));
     }
 }
