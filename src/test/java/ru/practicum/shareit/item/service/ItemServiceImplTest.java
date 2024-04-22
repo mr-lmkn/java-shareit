@@ -7,10 +7,14 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.modelmapper.ModelMapper;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import ru.practicum.shareit.booking.model.Booking;
 import ru.practicum.shareit.booking.storage.BookingRepository;
+import ru.practicum.shareit.error.exceptions.BadRequestException;
 import ru.practicum.shareit.error.exceptions.NoContentException;
 import ru.practicum.shareit.item.comment.dto.ItemCommentRequestDto;
+import ru.practicum.shareit.item.comment.dto.ItemCommentResponseDto;
 import ru.practicum.shareit.item.comment.model.ItemComment;
 import ru.practicum.shareit.item.comment.storage.CommentRepository;
 import ru.practicum.shareit.item.dto.ItemRequestDto;
@@ -20,12 +24,15 @@ import ru.practicum.shareit.request.storage.RequestRepository;
 import ru.practicum.shareit.user.model.User;
 import ru.practicum.shareit.user.service.UserService;
 
+import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.when;
+import static ru.practicum.shareit.booking.enums.BookingStatus.APPROVED;
 
 @ExtendWith(MockitoExtension.class)
 class ItemServiceImplTest {
@@ -99,4 +106,48 @@ class ItemServiceImplTest {
         ItemComment itemComment = itemService.addComment(id, inComment, id);
         assertEquals(1, 1);
     }
+
+    @Test
+    @SneakyThrows
+    void addComment_err() {
+        ItemCommentRequestDto inComment = ItemCommentRequestDto.builder().build();
+        when(modelMapper.map(inComment, ItemComment.class)).thenReturn(new ItemComment());
+        when(bookingRepository.findAllByUserBookings(id, id)).thenReturn(new ArrayList<>());
+        when(itemRepository.findById(id)).thenReturn(Optional.of(itemModel));
+        assertThrows(BadRequestException.class, () -> itemService.addComment(id, inComment, id));
+    }
+
+    @Test
+    @SneakyThrows
+    void getAllUserItems() {
+        ArrayList<Item> itemsList = new ArrayList<>();
+        Item item = Item.builder().id(1L).build();
+        // add comment
+        itemsList.add(item);
+        ItemComment itemComment = ItemComment.builder().id(1L).item(item).build();
+        ItemCommentResponseDto itemCommentResponseDto = ItemCommentResponseDto.builder().id(1L).itemId(1L).build();
+        when(itemRepository.findAllByOwner(
+                        userService.getUserById(1L),
+                        PageRequest.of(1, 1, Sort.by("created").descending())
+                )
+        ).thenReturn(itemsList);
+        when(commentRepository.findAllByItemIdIn(List.of(1L)))
+                .thenReturn(List.of(itemComment));
+        when(modelMapper.map(itemComment, ItemCommentResponseDto.class))
+                .thenReturn(itemCommentResponseDto);
+        // add booking
+        LocalDateTime now = LocalDateTime.now();
+        Booking booking = Booking.builder().item(item)
+                .start(now)
+                .end(now)
+                .build();
+        List<Booking> bookingList = new ArrayList<>();
+        bookingList.add(booking);
+        when(bookingRepository.findAllByItemInAndStatusOrderByStartAsc(itemsList, APPROVED))
+                .thenReturn(bookingList);
+        assertEquals(1,
+            itemService.getAllUserItems(1L, Optional.of(1), Optional.of(1)).size()
+        );
+    }
+
 }

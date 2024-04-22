@@ -47,11 +47,8 @@ public class ItemServiceImpl implements ItemService {
 
     @Override
     @Transactional
-    public List<Item> getAllUserItems(
-            Long ownerId,
-            Optional<Integer> from,
-            Optional<Integer> size
-    ) throws NoContentException {
+    public List<Item> getAllUserItems(Long ownerId, Optional<Integer> from, Optional<Integer> size)
+            throws NoContentException {
         ArrayList<Item> itemsList;
         if (from.isPresent() && size.isPresent()) {
             PageRequest page = PageRequest.of(from.get(), size.get(), Sort.by("created").descending());
@@ -225,7 +222,6 @@ public class ItemServiceImpl implements ItemService {
     ) {
         if (!text.isEmpty() && (from.isEmpty() || size.isEmpty())) {
             return itemRepository.findUserItemLike(text, text);
-
         } else if (!text.isEmpty() && from.isPresent() && size.isPresent()) {
             return itemRepository.findUserItemLikePage(text, text, from.get(), size.get());
         }
