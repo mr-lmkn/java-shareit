@@ -10,6 +10,9 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import ru.practicum.shareit.booking.service.BookingService;
+import ru.practicum.shareit.item.comment.dto.ItemCommentRequestDto;
+import ru.practicum.shareit.item.comment.dto.ItemCommentResponseDto;
+import ru.practicum.shareit.item.comment.model.ItemComment;
 import ru.practicum.shareit.item.dto.ItemRequestDto;
 import ru.practicum.shareit.item.dto.ItemResponseDto;
 import ru.practicum.shareit.item.model.Item;
@@ -19,6 +22,8 @@ import ru.practicum.shareit.user.model.User;
 import ru.practicum.shareit.user.service.UserService;
 
 import java.nio.charset.StandardCharsets;
+import java.util.List;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.verify;
@@ -122,6 +127,97 @@ class ItemControllerTest {
 
         assertEquals(response, result);
         verify(modelMapper).map(newItem, ItemResponseDto.class);
+    }
+
+
+    @Test
+    @SneakyThrows
+    void getAllUserItems() {
+        Item newItem = Item.builder()
+                .name("n")
+                .available(true)
+                .description("d")
+                .owner(User.builder().email("bbb@bb.ru").name("bbb").build())
+                .build();
+        ItemResponseDto responseDto = ItemResponseDto.builder()
+                .name("n")
+                .description("d")
+                .available(true)
+                .owner(id)
+                .build();
+        when(itemService.getAllUserItems(id, Optional.of(1), Optional.of(1))).thenReturn(List.of(newItem));
+        when(modelMapper.map(newItem, ItemResponseDto.class)).thenReturn(responseDto);
+        String result = mvc.perform(get("/items?userId=1&from=1&size=1")
+                .header("X-Sharer-User-Id", id)
+                .characterEncoding(StandardCharsets.UTF_8)
+                .contentType(MediaType.APPLICATION_JSON)
+                .accept(MediaType.APPLICATION_JSON)
+        ).andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+
+        List<ItemResponseDto> resp = List.of(responseDto);
+        String response = mapper.writeValueAsString(resp);
+        assertEquals(response, result);
+        verify(modelMapper).map(newItem, ItemResponseDto.class);
+    }
+
+
+    @Test
+    @SneakyThrows
+    void getSerchItems() {
+        Item newItem = Item.builder()
+                .name("n")
+                .available(true)
+                .description("d")
+                .owner(User.builder().email("bbb@bb.ru").name("bbb").build())
+                .build();
+        ItemResponseDto responseDto = ItemResponseDto.builder()
+                .name("n")
+                .description("d")
+                .available(true)
+                .owner(id)
+                .build();
+        when(itemService.searchItemByName(id, "fff", Optional.of(1), Optional.of(1)))
+                .thenReturn(List.of(newItem));
+        when(modelMapper.map(newItem, ItemResponseDto.class)).thenReturn(responseDto);
+        String result = mvc.perform(get("/items/search?text=fff&from=1&size=1")
+                .header("X-Sharer-User-Id", id)
+                .characterEncoding(StandardCharsets.UTF_8)
+                .contentType(MediaType.APPLICATION_JSON)
+                .accept(MediaType.APPLICATION_JSON)
+        ).andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+
+        List<ItemResponseDto> resp = List.of(responseDto);
+        String response = mapper.writeValueAsString(resp);
+        assertEquals(response, result);
+        verify(modelMapper).map(newItem, ItemResponseDto.class);
+    }
+
+    @Test
+    @SneakyThrows
+    void create_comment_ok() {
+        ItemComment comment = ItemComment.builder()
+                .text("a")
+                .build();
+        ItemCommentRequestDto requestDto = ItemCommentRequestDto.builder()
+                .text("a")
+                .build();
+        ItemCommentResponseDto responseDto = ItemCommentResponseDto.builder()
+                .text("a")
+                .build();
+        String response = mapper.writeValueAsString(responseDto);
+        String body = mapper.writeValueAsString(requestDto);
+        when(itemService.addComment(id, requestDto, 1L)).thenReturn(comment);
+        when(modelMapper.map(comment, ItemCommentResponseDto.class)).thenReturn(responseDto);
+        String result = mvc.perform(post("/items/1/comment")
+                .header("X-Sharer-User-Id", id)
+                .content(body)
+                .characterEncoding(StandardCharsets.UTF_8)
+                .contentType(MediaType.APPLICATION_JSON)
+                .accept(MediaType.APPLICATION_JSON)
+        ).andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+
+        assertEquals(response, result);
+        verify(modelMapper).map(comment, ItemCommentResponseDto.class);
     }
 
 }
