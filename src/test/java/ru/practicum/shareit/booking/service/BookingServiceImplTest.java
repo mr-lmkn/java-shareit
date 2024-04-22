@@ -63,7 +63,10 @@ class BookingServiceImplTest {
     private final User user = User.builder().id(id).email("xxx@mm.eee").build();
 
     private final Item item = Item.builder().id(id).owner(user).name("ff").available(true).build();
-    private final Booking booking = Booking.builder().id(id).start(from).end(to).item(item).booker(user).build();
+    private final Booking booking = Booking.builder()
+            .id(id).start(from).end(to)
+            .item(item).booker(user)
+            .build();
     private final BookingRequestDto bookingRequestDto = BookingRequestDto.builder().itemId(id).build();
 
     @Test
@@ -126,6 +129,37 @@ class BookingServiceImplTest {
     @SneakyThrows
     void getStateByUser_ok() {
         assertEquals("APPROVED", bookingService.getStateByUser(booking, id, "true").toString());
+    }
+
+    @Test
+    @SneakyThrows
+    void setState_Err() {
+        Booking booking = Booking.builder()
+                .id(id).start(from).end(to)
+                .item(item).booker(user)
+                .status(BookingStatus.APPROVED)
+                .build();
+        when(bookingRepository.existsById(1L)).thenReturn(true);
+        when(bookingRepository.findById(1L)).thenReturn(Optional.ofNullable(booking));
+
+
+        assertThrows(BadRequestException.class, () -> bookingService.setState(1L, 1L, "true"));
+    }
+
+    @Test
+    @SneakyThrows
+    void setState_Or() {
+        Booking booking = Booking.builder()
+                .id(id).start(from).end(to)
+                .item(item).booker(user)
+                .status(BookingStatus.CANCELED)
+                .build();
+        when(bookingRepository.existsById(1L)).thenReturn(true);
+        when(bookingRepository.findById(1L)).thenReturn(Optional.ofNullable(booking));
+
+        Booking updBooking = bookingService.setState(1L, 1L, "true");
+
+        assertEquals(1L, updBooking.getId());
     }
 
 }
