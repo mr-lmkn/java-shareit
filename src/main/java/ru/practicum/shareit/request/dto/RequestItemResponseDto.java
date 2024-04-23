@@ -19,7 +19,6 @@ public class RequestItemResponseDto {
     private Long id;
     private String description;
     private Long requester;
-    // @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
     private LocalDateTime created;
     private List<Item> items;
 

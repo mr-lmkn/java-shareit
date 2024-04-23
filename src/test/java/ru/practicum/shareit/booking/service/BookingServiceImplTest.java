@@ -68,7 +68,9 @@ class BookingServiceImplTest {
             .id(id).start(from).end(to)
             .item(item).booker(user)
             .build();
-    private final BookingRequestDto bookingRequestDto = BookingRequestDto.builder().itemId(id).build();
+    private final BookingRequestDto bookingRequestDto = BookingRequestDto.builder()
+            .itemId(id)
+            .build();
 
     @Test
     @SneakyThrows
