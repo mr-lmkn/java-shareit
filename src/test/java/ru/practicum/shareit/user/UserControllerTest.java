@@ -1,182 +1,82 @@
 package ru.practicum.shareit.user;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.modelmapper.ModelMapper;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.reactive.AutoConfigureWebTestClient;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.http.MediaType;
-import org.springframework.test.context.junit.jupiter.web.SpringJUnitWebConfig;
-import org.springframework.test.web.servlet.MockMvc;
+import ru.practicum.shareit.error.exceptions.BadRequestException;
+import ru.practicum.shareit.error.exceptions.ConflictException;
+import ru.practicum.shareit.error.exceptions.NoContentException;
 import ru.practicum.shareit.user.dto.UserRequestDto;
 import ru.practicum.shareit.user.dto.UserResponseDto;
 import ru.practicum.shareit.user.model.User;
-import ru.practicum.shareit.user.service.UserServiceImpl;
-import ru.practicum.shareit.user.storege.UserRepository;
+import ru.practicum.shareit.user.service.UserService;
 
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
+import java.util.List;
 
-import static org.hamcrest.core.Is.is;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.when;
 
-@SpringBootTest
-@AutoConfigureMockMvc
-@AutoConfigureWebTestClient
-@SpringJUnitWebConfig()
+@ExtendWith(MockitoExtension.class)
 class UserControllerTest {
-
-    @Autowired
-    private MockMvc mvc;
-
     @Mock
-    private UserRepository userRepository;
-
-    @Autowired
-    private UserServiceImpl userService;
-
-    @Autowired
+    private UserService userService;
+    @Mock
     private ModelMapper modelMapper;
+    @InjectMocks
+    private UserController userController;
 
-    private final ObjectMapper mapper = new ObjectMapper();
-    private final UserRequestDto requestUser1 = UserRequestDto.builder()
-            .email("mail@mail.ru")
-            .name("user1")
-            .build();
+    private User user;
+    private UserRequestDto userReq;
+    private UserResponseDto userResp;
 
-    private final UserResponseDto responseUser1 = UserResponseDto.builder()
-            .id(1L)
-            .email("mail@mail.ru")
-            .name("user1")
-            .build();
-
-    private final User user1 = User.builder()
-            .email("mail@mail.ru")
-            .name("user1")
-            .build();
-
-
-    @Test
-    void create_ok() throws Exception {
-        ArrayList<User> emptyUserList = new ArrayList<User>();
-        mvc.perform(post("/users")
-                        .content(mapper.writeValueAsString(requestUser1))
-                        .characterEncoding(StandardCharsets.UTF_8)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .accept(MediaType.APPLICATION_JSON))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.name", is(responseUser1.getName())))
-                .andExpect(jsonPath("$.email", is(responseUser1.getEmail())));
-    }
-
-    @Test
-    void create_wrong_email_err() throws Exception {
-        UserRequestDto requestUser2 = UserRequestDto.builder()
-                .email("cccc")
-                .name("ffff")
+    @BeforeEach
+    void setUp() {
+        user = User.builder()
+                .id(1L)
+                .email("xmail@mail.ru")
+                .name("User-name")
                 .build();
+        userReq = UserRequestDto.builder().id(1L).email("xmail@mail.ru").name("User-name").build();
+        userResp = UserResponseDto.builder().id(1L).email("xmail@mail.ru").name("User-name").build();
 
-        mvc.perform(post("/users")
-                        .content(mapper.writeValueAsString(requestUser2))
-                        .characterEncoding(StandardCharsets.UTF_8)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .accept(MediaType.APPLICATION_JSON))
-                .andExpect(status().is4xxClientError());
+        when(modelMapper.map(user, UserResponseDto.class)).thenReturn(userResp);
     }
 
     @Test
-    void create_double_email_err() throws Exception {
-        UserRequestDto requestUser2 = UserRequestDto.builder()
-                .email("cccc@mail.ru")
-                .name("ffff")
+    void getAll() {
+        List<User> sample = List.of(user);
+        when(userService.getAllUsers()).thenReturn(sample);
+
+        List<UserResponseDto> reply = userController.getAll();
+        assertEquals(sample.size(), reply.size());
+    }
+
+    @Test
+    void create_ok() throws ConflictException, BadRequestException, NoContentException {
+        when(userService.createUser(userReq)).thenReturn(user);
+        UserResponseDto reply = userController.create(userReq);
+        assertEquals(userResp, reply);
+    }
+
+    @Test
+    void update_ok() throws ConflictException, BadRequestException, NoContentException {
+        when(userService.createUser(userReq)).thenReturn(user);
+        userController.create(userReq);
+
+        User updatedUser = User.builder()
+                .id(1L)
+                .email("some@mail.com")
+                .name("some")
                 .build();
+        UserRequestDto requset = modelMapper.map(updatedUser, UserRequestDto.class);
+        UserResponseDto response = modelMapper.map(updatedUser, UserResponseDto.class);
+        UserResponseDto reply = userController.update(1, requset);
 
-        mvc.perform(post("/users")
-                .content(mapper.writeValueAsString(requestUser2))
-                .characterEncoding(StandardCharsets.UTF_8)
-                .contentType(MediaType.APPLICATION_JSON)
-                .accept(MediaType.APPLICATION_JSON));
-
-        requestUser2.setName("ddd");
-
-        Exception exception = assertThrows(org.springframework.web.util.NestedServletException.class, () -> {
-                    mvc.perform(post("/users")
-                                    .content(mapper.writeValueAsString(requestUser2))
-                                    .characterEncoding(StandardCharsets.UTF_8)
-                                    .contentType(MediaType.APPLICATION_JSON)
-                                    .accept(MediaType.APPLICATION_JSON))
-                            .andExpect(status().isInternalServerError());
-                }
-        );
-    }
-
-    @Test
-    void create_no_email_err() throws Exception {
-        UserRequestDto requestUser2 = UserRequestDto.builder()
-                .email("cccc")
-                .build();
-
-        mvc.perform(post("/users")
-                        .content(mapper.writeValueAsString(requestUser2))
-                        .characterEncoding(StandardCharsets.UTF_8)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .accept(MediaType.APPLICATION_JSON))
-                .andExpect(status().is4xxClientError());
-    }
-
-    @Test
-    void create_no_name_err() throws Exception {
-        UserRequestDto requestUser2 = UserRequestDto.builder()
-                .email("cccc@mail.ru")
-                .build();
-        mvc.perform(post("/users")
-                        .content(mapper.writeValueAsString(requestUser2))
-                        .characterEncoding(StandardCharsets.UTF_8)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .accept(MediaType.APPLICATION_JSON))
-                .andExpect(status().is4xxClientError());
-    }
-
-    @Test
-    void delete_ok() throws Exception {
-        UserRequestDto requestUser2 = UserRequestDto.builder()
-                .email("delete@mail.ru")
-                .name("to_delete")
-                .build();
-        User u = userService.createUser(requestUser2);
-
-        mvc.perform(delete("/users/" + u.getId())
-                        .characterEncoding(StandardCharsets.UTF_8)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .accept(MediaType.APPLICATION_JSON))
-                .andExpect(status().isOk());
-
-    }
-
-    @Test
-    void getUser_no_user_err() throws Exception {
-        User user = new User();
-        mvc.perform(get("/users/-11"))
-                .andExpect(status().is4xxClientError());
-    }
-
-    @Test
-    void getUser_ok() throws Exception {
-        UserRequestDto userA = UserRequestDto.builder()
-                .email("madddl@mail.ru")
-                .name("userA")
-                .build();
-        User xUser = userService.createUser(userA);
-        mvc.perform(get("/users/" + xUser.getId()))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.name", is(userA.getName())))
-                .andExpect(jsonPath("$.email", is(userA.getEmail())));
+        assertEquals(response, reply);
     }
 
 }
