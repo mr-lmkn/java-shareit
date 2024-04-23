@@ -80,6 +80,21 @@ class ItemServiceImplTest {
     }
 
     @Test
+    @SneakyThrows
+    void createItem_user_err() {
+        ItemRequestDto itemRequestDto = ItemRequestDto.builder().build();
+        when(userService.getUserById(id)).thenReturn(null);
+        assertThrows(NoContentException.class, () -> itemService.createItem(id, itemRequestDto));
+    }
+
+    @Test
+    @SneakyThrows
+    void createItem_item_err() {
+        ItemRequestDto itemRequestDto = ItemRequestDto.builder().build();
+        assertThrows(BadRequestException.class, () -> itemService.createItem(id, null));
+    }
+
+    @Test
     void updateItem_err() {
         when(modelMapper.map(itemRequestDto, Item.class)).thenReturn(itemModel);
         assertThrows(NoContentException.class, () -> itemService.updateItem(id, id, itemRequestDto));
@@ -146,8 +161,35 @@ class ItemServiceImplTest {
         when(bookingRepository.findAllByItemInAndStatusOrderByStartAsc(itemsList, APPROVED))
                 .thenReturn(bookingList);
         assertEquals(1,
-            itemService.getAllUserItems(1L, Optional.of(1), Optional.of(1)).size()
+                itemService.getAllUserItems(1L, Optional.of(1), Optional.of(1)).size()
         );
+    }
+
+    @Test
+    @SneakyThrows
+    void searchItemByName_no_text() {
+        List<Item> ret = itemService.searchItemByName(id, "", Optional.of(1), Optional.of(1));
+        assertEquals(0, ret.size());
+    }
+
+    @Test
+    @SneakyThrows
+    void searchItemByName_page_ok() {
+        ArrayList<Item> itemsList = new ArrayList<>();
+        itemsList.add(new Item());
+        when(itemRepository.findUserItemLikePage("srch", "srch", 1, 1)).thenReturn(itemsList);
+        List<Item> ret = itemService.searchItemByName(id, "srch", Optional.of(1), Optional.of(1));
+        assertEquals(1, ret.size());
+    }
+
+    @Test
+    @SneakyThrows
+    void searchItemByName_ok() {
+        ArrayList<Item> itemsList = new ArrayList<>();
+        itemsList.add(new Item());
+        when(itemRepository.findUserItemLike("srch", "srch")).thenReturn(itemsList);
+        List<Item> ret = itemService.searchItemByName(id, "srch", Optional.empty(), Optional.empty());
+        assertEquals(1, ret.size());
     }
 
 }
