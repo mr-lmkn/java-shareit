@@ -204,4 +204,9 @@ class ItemServiceImplTest {
         assertThrows(NoContentException.class, () -> itemService.getItemById(id, id));
     }
 
+    @Test
+    @SneakyThrows
+    void getItemById_delete_ok() {
+        itemService.delete(id, id);
+    }
 }

@@ -11,6 +11,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.modelmapper.ModelMapper;
+import org.springframework.data.domain.Sort;
 import ru.practicum.shareit.error.exceptions.BadRequestException;
 import ru.practicum.shareit.error.exceptions.NoContentException;
 import ru.practicum.shareit.user.dto.UserRequestDto;
@@ -18,6 +19,7 @@ import ru.practicum.shareit.user.model.User;
 import ru.practicum.shareit.user.storege.UserRepository;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -131,4 +133,11 @@ class UserServiceImplTest {
         assertEquals(user1.getId(), id);
     }
 
+    @Test
+    @SneakyThrows
+    void getAllUsers_ok() {
+        Sort sortById = Sort.by(Sort.Direction.ASC, "id");
+        when(userRepository.findAll(sortById)).thenReturn(List.of(new User()));
+        assertEquals(1, userService.getAllUsers().size());
+    }
 }
