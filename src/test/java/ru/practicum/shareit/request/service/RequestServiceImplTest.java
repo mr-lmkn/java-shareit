@@ -83,10 +83,6 @@ class RequestServiceImplTest {
     }
 
     @Test
-    void getAllUserItemRequests() {
-    }
-
-    @Test
     @SneakyThrows
     void getById_ok() {
         when(userService.getUserById(id)).thenReturn(user);
@@ -123,4 +119,17 @@ class RequestServiceImplTest {
     void create_no_data_err() {
         assertThrows(BadRequestException.class, () -> requestService.create(id, null));
     }
+
+
+    @Test
+    @SneakyThrows
+    void getAllUserItemRequests() {
+        List<RequestItem> wait = List.of(requestItem);
+        when(userService.getUserById(id)).thenReturn(user);
+        when(requestRepository
+                .findAllByRequesterOrderByCreated(user)
+        ).thenReturn(wait);
+        assertEquals(wait.size(), requestService.getAllUserItemRequests(id).size());
+    }
+
 }

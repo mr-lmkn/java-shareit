@@ -309,4 +309,27 @@ class BookingServiceImplTest {
         );
     }
 
+    @Test
+    @SneakyThrows
+    void getFromUserByRequest_no_page_ok() {
+        when(userService.getUserById(id)).thenReturn(user);
+        when(bookingRepository.getFromUserByState(id, "WAITING", true))
+                .thenReturn(List.of(booking));
+        assertEquals(1,
+                bookingService.getFromUserByRequest(
+                        id, "WAITING", true, Optional.empty(), Optional.empty()
+                ).size()
+        );
+    }
+
+    @Test
+    @SneakyThrows
+    void getFromUserByRequest_page_err() {
+        when(userService.getUserById(id)).thenReturn(user);
+        assertThrows(BadRequestException.class,
+                () -> bookingService.getFromUserByRequest(id, "WAITING",
+                        true, Optional.of(-1), Optional.of(-1)
+                ));
+    }
+
 }
