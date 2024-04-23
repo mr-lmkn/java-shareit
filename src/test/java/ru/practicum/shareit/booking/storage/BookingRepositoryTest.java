@@ -72,7 +72,6 @@ class BookingRepositoryTest {
                 bookingRepository.isBookingAvailable(itemX.getId(), from.minusDays(1), to.minusDays(5)));
     }
 
-
     @Test
     void getFromUserByStatePage() {
         User owner = userRepo.save(User.builder().email("d").build());
@@ -88,7 +87,7 @@ class BookingRepositoryTest {
                 .build());
         entityManager.getEntityManager().clear();
         assertEquals(1,
-                bookingRepository.getFromUserByStatePage(userX.getId(),"PAST", false, 1,1).size()
+                bookingRepository.getFromUserByStatePage(userX.getId(), "PAST", false, 1, 1).size()
         );
     }
 
@@ -108,7 +107,7 @@ class BookingRepositoryTest {
         entityManager.getEntityManager().clear();
         System.out.println(booking.toString());
         assertEquals(2,
-         bookingRepository.findAllByUserBookings(userX.getId(),itemX.getId()).size()
+                bookingRepository.findAllByUserBookings(userX.getId(), itemX.getId()).size()
         );
     }
 

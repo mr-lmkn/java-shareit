@@ -24,6 +24,7 @@ import ru.practicum.shareit.user.service.UserService;
 
 import javax.persistence.EntityManager;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -133,6 +134,31 @@ class BookingServiceImplTest {
 
     @Test
     @SneakyThrows
+    void getStateByUser_rej_ok() {
+        assertEquals("REJECTED", bookingService.getStateByUser(booking, id, "false").toString());
+    }
+
+    @Test
+    @SneakyThrows
+    void getStateByUser_cansel_err() {
+        assertThrows(NoContentException.class, () -> bookingService.getStateByUser(booking, 2L, "false"));
+    }
+
+    @Test
+    @SneakyThrows
+    void getStateByUser_cansel_ok() {
+        Long bookerId = 2L;
+        Booking booking = Booking.builder()
+                .id(id).start(from).end(to)
+                .item(Item.builder().owner(User.builder().id(id).build()).build()).booker(user)
+                .booker(User.builder().id(bookerId).build())
+                .status(BookingStatus.APPROVED)
+                .build();
+        assertEquals("CANCELED", bookingService.getStateByUser(booking, bookerId, "false").toString());
+    }
+
+    @Test
+    @SneakyThrows
     void setState_Err() {
         Booking booking = Booking.builder()
                 .id(id).start(from).end(to)
@@ -142,13 +168,12 @@ class BookingServiceImplTest {
         when(bookingRepository.existsById(1L)).thenReturn(true);
         when(bookingRepository.findById(1L)).thenReturn(Optional.ofNullable(booking));
 
-
         assertThrows(BadRequestException.class, () -> bookingService.setState(1L, 1L, "true"));
     }
 
     @Test
     @SneakyThrows
-    void setState_Or() {
+    void setState_Ok() {
         Booking booking = Booking.builder()
                 .id(id).start(from).end(to)
                 .item(item).booker(user)
@@ -160,6 +185,109 @@ class BookingServiceImplTest {
         Booking updBooking = bookingService.setState(1L, 1L, "true");
 
         assertEquals(1L, updBooking.getId());
+    }
+
+    @Test
+    @SneakyThrows
+    void getFromBookerOrOwner_Ok() {
+        Booking booking = Booking.builder()
+                .id(id).start(from).end(to)
+                .item(item).booker(user)
+                .status(BookingStatus.CANCELED)
+                .build();
+        when(bookingRepository.existsById(id)).thenReturn(true);
+        when(bookingRepository.findById(id)).thenReturn(Optional.ofNullable(booking));
+
+        Booking updBooking = bookingService.getFromBookerOrOwner(id, id);
+        assertEquals(id, updBooking.getId());
+    }
+
+    @Test
+    @SneakyThrows
+    void getFromBookerOrOwner_no_access_err() {
+        Booking booking = Booking.builder()
+                .id(id).start(from).end(to)
+                .item(item).booker(user)
+                .status(BookingStatus.CANCELED)
+                .build();
+        when(bookingRepository.existsById(id)).thenReturn(true);
+        when(bookingRepository.findById(id)).thenReturn(Optional.ofNullable(booking));
+
+        assertThrows(NoContentException.class, () -> bookingService.getFromBookerOrOwner(10L, id));
+    }
+
+    @Test
+    @SneakyThrows
+    void getFromUserByRequest_err() {
+        assertThrows(BadRequestException.class,
+                () -> bookingService.getFromUserByRequest(id, "",
+                        true, Optional.of(-1), Optional.of(-1)
+                ));
+    }
+
+    @Test
+    @SneakyThrows
+    void getFromUserByRequest_all_ok() {
+        when(userService.getUserById(id)).thenReturn(user);
+        when(bookingRepository.getFromUserByStatePage(id, "ALL", true, 1, 1))
+                .thenReturn(List.of(booking));
+        assertEquals(1,
+                bookingService.getFromUserByRequest(id, "ALL",
+                        true, Optional.of(1), Optional.of(1)
+                ).size()
+        );
+    }
+
+    @Test
+    @SneakyThrows
+    void getFromUserByRequest_current_ok() {
+        when(userService.getUserById(id)).thenReturn(user);
+        when(bookingRepository.getFromUserByStatePage(id, "CURRENT", true, 1, 1))
+                .thenReturn(List.of(booking));
+        assertEquals(1,
+                bookingService.getFromUserByRequest(id, "CURRENT",
+                        true, Optional.of(1), Optional.of(1)
+                ).size()
+        );
+    }
+
+    @Test
+    @SneakyThrows
+    void getFromUserByRequest_past_ok() {
+        when(userService.getUserById(id)).thenReturn(user);
+        when(bookingRepository.getFromUserByStatePage(id, "PAST", true, 1, 1))
+                .thenReturn(List.of(booking));
+        assertEquals(1,
+                bookingService.getFromUserByRequest(id, "PAST",
+                        true, Optional.of(1), Optional.of(1)
+                ).size()
+        );
+    }
+
+    @Test
+    @SneakyThrows
+    void getFromUserByRequest_rejected_ok() {
+        when(userService.getUserById(id)).thenReturn(user);
+        when(bookingRepository.getFromUserByStatePage(id, "REJECTED", true, 1, 1))
+                .thenReturn(List.of(booking));
+        assertEquals(1,
+                bookingService.getFromUserByRequest(id, "REJECTED",
+                        true, Optional.of(1), Optional.of(1)
+                ).size()
+        );
+    }
+
+    @Test
+    @SneakyThrows
+    void getFromUserByRequest_waiting_ok() {
+        when(userService.getUserById(id)).thenReturn(user);
+        when(bookingRepository.getFromUserByStatePage(id, "WAITING", true, 1, 1))
+                .thenReturn(List.of(booking));
+        assertEquals(1,
+                bookingService.getFromUserByRequest(id, "WAITING",
+                        true, Optional.of(1), Optional.of(1)
+                ).size()
+        );
     }
 
 }

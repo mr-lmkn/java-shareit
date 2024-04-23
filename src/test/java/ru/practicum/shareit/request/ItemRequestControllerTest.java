@@ -76,8 +76,6 @@ class ItemRequestControllerTest {
     @Test
     @SneakyThrows
     void getAllRequests_ok() {
-        mapper.registerModule(new JavaTimeModule());
-        String requestBody = mapper.writeValueAsString(requestDto);
         when(requestService.getAll(id, Optional.empty(), Optional.empty())).thenReturn(List.of(requestItem));
 
         mvc.perform(get("/requests/all")
@@ -90,4 +88,36 @@ class ItemRequestControllerTest {
         verify(requestService).getAll(id, Optional.empty(), Optional.empty());
         verify(modelMapper).map(requestItem, RequestItemResponseDto.class);
     }
+
+    @Test
+    @SneakyThrows
+    void getAllUserRequests_ok() {
+        when(requestService.getAllUserItemRequests(id)).thenReturn(List.of(requestItem));
+        mvc.perform(get("/requests")
+                .header("X-Sharer-User-Id", id)
+                .characterEncoding(StandardCharsets.UTF_8)
+                .contentType(MediaType.APPLICATION_JSON)
+                .accept(MediaType.APPLICATION_JSON)
+        ).andExpect(status().isOk());
+
+        verify(requestService).getAllUserItemRequests(id);
+        verify(modelMapper).map(requestItem, RequestItemResponseDto.class);
+    }
+
+    @Test
+    @SneakyThrows
+    void getRequest() {
+        when(requestService.getById(id,id)).thenReturn(requestItem);
+
+        mvc.perform(get("/requests/1")
+                .header("X-Sharer-User-Id", id)
+                .characterEncoding(StandardCharsets.UTF_8)
+                .contentType(MediaType.APPLICATION_JSON)
+                .accept(MediaType.APPLICATION_JSON)
+        ).andExpect(status().isOk());
+
+        verify(requestService).getById(id,id);
+        verify(modelMapper).map(requestItem, RequestItemResponseDto.class);
+    }
+
 }

@@ -150,7 +150,8 @@ public class BookingServiceImpl implements BookingService {
     public BookingStatus getStateByUser(Booking booking, Long userId, String state) throws NoContentException {
         Long ownerId = booking.getItem().getOwner().getId();
         Long bookerId = booking.getBooker().getId();
-        boolean bState;
+        boolean bState = false;
+
         if (state.equalsIgnoreCase("true")) {
             bState = true;
         } else if (state.equalsIgnoreCase("false")) {

@@ -50,11 +50,6 @@ public class UserServiceImpl implements UserService {
         log.info("Зарос создания пользователя");
         User user = isUserDataExist(userRequestDto);
         ArrayList<User> usersSameEmail = repository.findByEmailContainingIgnoreCase(user.getEmail());
-    /* Тесты хотят инкремент id ошибок при ошибке
-        String msg = String.format("Пользователь с e-mail %s уже существует.", user.getEmail());
-        log.info(msg);
-        throw new ConflictException(msg); <-- ConflictException
-    */
         return repository.save(user);
     }
 

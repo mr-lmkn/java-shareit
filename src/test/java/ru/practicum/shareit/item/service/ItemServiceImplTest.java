@@ -101,6 +101,11 @@ class ItemServiceImplTest {
     }
 
     @Test
+    void updateItem_id_err() {
+        assertThrows(BadRequestException.class, () -> itemService.updateItem(id, null, itemRequestDto));
+    }
+
+    @Test
     @SneakyThrows
     void updateItem_ok() {
         when(modelMapper.map(itemRequestDto, Item.class)).thenReturn(itemModel);
