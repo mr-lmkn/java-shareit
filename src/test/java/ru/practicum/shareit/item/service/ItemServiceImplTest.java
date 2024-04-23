@@ -197,4 +197,11 @@ class ItemServiceImplTest {
         assertEquals(1, ret.size());
     }
 
+    @Test
+    @SneakyThrows
+    void getItemById_err() {
+        when(itemRepository.findById(id)).thenReturn(Optional.empty());
+        assertThrows(NoContentException.class, () -> itemService.getItemById(id, id));
+    }
+
 }

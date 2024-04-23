@@ -22,8 +22,7 @@ import java.util.ArrayList;
 
 import static org.hamcrest.core.Is.is;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -158,6 +157,26 @@ class UserControllerTest {
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk());
 
+    }
+
+    @Test
+    void getUser_no_user_err() throws Exception {
+        User user = new User();
+        mvc.perform(get("/users/-11"))
+                .andExpect(status().is4xxClientError());
+    }
+
+    @Test
+    void getUser_ok() throws Exception {
+        UserRequestDto userA = UserRequestDto.builder()
+                .email("madddl@mail.ru")
+                .name("userA")
+                .build();
+        User xUser = userService.createUser(userA);
+        mvc.perform(get("/users/" + xUser.getId()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.name", is(userA.getName())))
+                .andExpect(jsonPath("$.email", is(userA.getEmail())));
     }
 
 }

@@ -28,8 +28,7 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest
@@ -218,6 +217,44 @@ class ItemControllerTest {
 
         assertEquals(response, result);
         verify(modelMapper).map(comment, ItemCommentResponseDto.class);
+    }
+
+    @Test
+    @SneakyThrows
+    void delete_ok() {
+        mvc.perform(delete("/items/1")
+                .header("X-Sharer-User-Id", id)
+        ).andExpect(status().isOk());
+        verify(itemService).delete(id, id);
+    }
+
+    @Test
+    @SneakyThrows
+    void update_ok() {
+        ItemRequestDto requestDto = new ItemRequestDto();
+        String body = mapper.writeValueAsString(requestDto);
+        Item newItem = Item.builder()
+                .name("n")
+                .available(true)
+                .description("d")
+                .owner(User.builder().email("bbb@bb.ru").name("bbb").build())
+                .build();
+        ItemResponseDto responseDto = ItemResponseDto.builder()
+                .name("n")
+                .description("d")
+                .available(true)
+                .owner(id)
+                .build();
+        when(itemService.getAllUserItems(id, Optional.of(1), Optional.of(1))).thenReturn(List.of(newItem));
+        when(modelMapper.map(newItem, ItemResponseDto.class)).thenReturn(responseDto);
+
+        mvc.perform(patch("/items/1")
+                .header("X-Sharer-User-Id", id)
+                .content(body)
+                .characterEncoding(StandardCharsets.UTF_8)
+                .contentType(MediaType.APPLICATION_JSON)
+                .accept(MediaType.APPLICATION_JSON)
+        ).andExpect(status().isOk());
     }
 
 }

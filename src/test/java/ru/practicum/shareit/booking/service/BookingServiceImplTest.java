@@ -110,6 +110,16 @@ class BookingServiceImplTest {
 
     @Test
     @SneakyThrows
+    void add_not_available_err() {
+        when(itemService.getItemById(id, id2)).thenReturn(item);
+        when(userService.getUserById(id2)).thenReturn(User.builder().id(id2).build());
+        when(modelMapper.map(bookingRequestDto, Booking.class)).thenReturn(booking);
+        when(bookingService.isBookingAvailable(id, from, to)).thenReturn(false);
+        assertThrows(NoContentException.class, () -> bookingService.add(id2, bookingRequestDto).getId());
+    }
+
+    @Test
+    @SneakyThrows
     void add_ok() {
         when(itemService.getItemById(id, id2)).thenReturn(item);
         when(userService.getUserById(id2)).thenReturn(User.builder().id(id2).build());
@@ -287,6 +297,15 @@ class BookingServiceImplTest {
                 bookingService.getFromUserByRequest(id, "WAITING",
                         true, Optional.of(1), Optional.of(1)
                 ).size()
+        );
+    }
+
+    @Test
+    @SneakyThrows
+    void getById_err_ok() {
+        when(bookingRepository.existsById(id)).thenReturn(false);
+        assertThrows(NoContentException.class,
+                () -> bookingService.getById(id)
         );
     }
 

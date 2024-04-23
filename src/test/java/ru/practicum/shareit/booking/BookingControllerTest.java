@@ -32,8 +32,7 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest
@@ -143,5 +142,54 @@ class BookingControllerTest {
                 .getContentAsString();
         assertEquals(waitedResponse, result);
         verify(modelMapper).map(booking, BookingResponseDto.class);
+    }
+
+    @Test
+    @SneakyThrows
+    void getFromOwner() {
+        String waitedResponse = mapper.writeValueAsString(List.of(bookingResponseDto));
+        List<Booking> bookings = List.of(booking);
+        when(bookingService.getFromUserByRequest(
+                id,
+                BookingRequestStatus.ALL.toString(),
+                true,
+                Optional.of(1),
+                Optional.of(1))
+        ).thenReturn(bookings);
+        when(modelMapper.map(booking, BookingResponseDto.class)).thenReturn(bookingResponseDto);
+        String result = mvc.perform(get("/bookings/owner/?state=ALL&from=1&size=1")
+                        .header("X-Sharer-User-Id", id))
+                .andExpect(status().isOk())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+        assertEquals(waitedResponse, result);
+        verify(modelMapper).map(booking, BookingResponseDto.class);
+    }
+
+    @Test
+    @SneakyThrows
+    void setAppruve_ok() {
+        when(modelMapper.map(booking, BookingResponseDto.class)).thenReturn(bookingResponseDto);
+        when(bookingService.setState(id, id, "true")).thenReturn(booking);
+        String result = mvc.perform(patch("/bookings/1?bookingId=1&approved=true")
+                        .header("X-Sharer-User-Id", id))
+                .andExpect(status().isOk())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+    }
+
+    @Test
+    @SneakyThrows
+    void getFromBookerOrOwner_ok() {
+        when(bookingService.getFromBookerOrOwner(id, id)).thenReturn(booking);
+        when(modelMapper.map(booking, BookingResponseDto.class)).thenReturn(bookingResponseDto);
+        String result = mvc.perform(get("/bookings/1")
+                        .header("X-Sharer-User-Id", id))
+                .andExpect(status().isOk())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
     }
 }
