@@ -11,6 +11,7 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import ru.practicum.shareit.booking.service.BookingService;
+import ru.practicum.shareit.item.model.Item;
 import ru.practicum.shareit.item.service.ItemService;
 import ru.practicum.shareit.request.dto.RequestItemRequestDto;
 import ru.practicum.shareit.request.dto.RequestItemResponseDto;
@@ -19,9 +20,11 @@ import ru.practicum.shareit.request.service.RequestService;
 import ru.practicum.shareit.user.service.UserService;
 
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -53,6 +56,11 @@ class ItemRequestControllerTest {
 
     RequestItemRequestDto requestDto = RequestItemRequestDto.builder().description("d").build();
     RequestItem requestItem = RequestItem.builder().description("d").build();
+    RequestItemResponseDto responsetItem = RequestItemResponseDto.builder()
+            .description("d")
+            .items(new ArrayList<Item>())
+            .build();
+
 
     @Test
     @SneakyThrows
@@ -107,17 +115,32 @@ class ItemRequestControllerTest {
     @Test
     @SneakyThrows
     void getRequest() {
-        when(requestService.getById(id,id)).thenReturn(requestItem);
+        when(requestService.getById(id, id)).thenReturn(requestItem);
+        when(modelMapper.map(requestItem, RequestItemResponseDto.class))
+                .thenReturn(responsetItem);
+        String waitResponse = mapper.writeValueAsString(responsetItem);
 
-        mvc.perform(get("/requests/1")
-                .header("X-Sharer-User-Id", id)
-                .characterEncoding(StandardCharsets.UTF_8)
-                .contentType(MediaType.APPLICATION_JSON)
-                .accept(MediaType.APPLICATION_JSON)
-        ).andExpect(status().isOk());
+        String getResponse = mvc.perform(
+                        get("/requests/1")
+                                .header("X-Sharer-User-Id", id)
+                                .characterEncoding(StandardCharsets.UTF_8)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .accept(MediaType.APPLICATION_JSON)
+                ).andExpect(status().isOk())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+        ;
+        //.andExpect(jsonPath("$.name", is(userA.getName())));
 
-        verify(requestService).getById(id,id);
+        verify(requestService).getById(id, id);
         verify(modelMapper).map(requestItem, RequestItemResponseDto.class);
-    }
 
+        assertEquals(waitResponse, getResponse);
+    }
+/*public RequestItemResponseDto getRequest(
+            @RequestHeader(OWNER_ID_HOLDER) long userId,
+            @PathVariable long id) throws NoContentException {
+        log.info("Got itemRequest request by id");
+        return modelMapper.map(requestService.getById(id, userId), RequestItemResponseDto.class);*/
 }

@@ -185,6 +185,7 @@ class BookingControllerTest {
     void getFromBookerOrOwner_ok() {
         when(bookingService.getFromBookerOrOwner(id, id)).thenReturn(booking);
         when(modelMapper.map(booking, BookingResponseDto.class)).thenReturn(bookingResponseDto);
+        bookingResponseDto.getItem();
         String result = mvc.perform(get("/bookings/1")
                         .header("X-Sharer-User-Id", id))
                 .andExpect(status().isOk())
