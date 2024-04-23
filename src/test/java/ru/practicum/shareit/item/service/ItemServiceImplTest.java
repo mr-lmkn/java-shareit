@@ -31,6 +31,7 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.when;
 import static ru.practicum.shareit.booking.enums.BookingStatus.APPROVED;
 
@@ -119,9 +120,10 @@ class ItemServiceImplTest {
     @Test
     @SneakyThrows
     void addComment() {
-        ItemCommentRequestDto inComment = ItemCommentRequestDto.builder().build();
-        when(modelMapper.map(inComment, ItemComment.class)).thenReturn(new ItemComment());
-        when(bookingRepository.findAllByUserBookings(id, id)).thenReturn(List.of(new Booking()));
+        ItemCommentRequestDto inComment = ItemCommentRequestDto.builder().text("dd").build();
+        when(modelMapper.map(inComment, ItemComment.class))
+                .thenReturn(ItemComment.builder().text("dd").build());
+        when(bookingRepository.findAllByUserBookings(anyLong(), anyLong())).thenReturn(List.of(new Booking()));
         when(itemRepository.findById(id)).thenReturn(Optional.of(itemModel));
         ItemComment itemComment = itemService.addComment(id, inComment, id);
         assertEquals(1, 1);
@@ -182,7 +184,9 @@ class ItemServiceImplTest {
     void searchItemByName_page_ok() {
         ArrayList<Item> itemsList = new ArrayList<>();
         itemsList.add(new Item());
-        when(itemRepository.findUserItemLikePage("srch", "srch", 1, 1)).thenReturn(itemsList);
+        when(itemRepository
+                .findUserItemLikePage("srch", "srch", 1, 1))
+                .thenReturn(itemsList);
         List<Item> ret = itemService.searchItemByName(id, "srch", Optional.of(1), Optional.of(1));
         assertEquals(1, ret.size());
     }
