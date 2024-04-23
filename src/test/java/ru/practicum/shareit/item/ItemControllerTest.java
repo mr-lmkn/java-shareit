@@ -1,5 +1,7 @@
 package ru.practicum.shareit.item;
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.SneakyThrows;
 import org.junit.jupiter.api.Test;
@@ -60,7 +62,7 @@ class ItemControllerTest {
 
     @Test
     @SneakyThrows
-    void create_empty_err() {
+    void create_null_err() {
         ItemRequestDto requestDto = new ItemRequestDto();
         String body = mapper.writeValueAsString(requestDto);
         mvc.perform(post("/items")
@@ -195,16 +197,27 @@ class ItemControllerTest {
     @SneakyThrows
     void create_comment_ok() {
         ItemComment comment = ItemComment.builder()
-                .text("a")
+                .text("texttt")
+                .item(Item.builder().id(id).build())
+                .id(id)
+                .author(User.builder().id(id).build())
                 .build();
         ItemCommentRequestDto requestDto = ItemCommentRequestDto.builder()
-                .text("a")
+                .text("texttt")
                 .build();
         ItemCommentResponseDto responseDto = ItemCommentResponseDto.builder()
-                .text("a")
+                .itemId(id)
+                .authorName("ffff")
+                .id(id)
+                .text("texttt")
                 .build();
+        mapper.setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
         String response = mapper.writeValueAsString(responseDto);
+
+        System.out.println("--> 1" + requestDto);
+        mapper.setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
         String body = mapper.writeValueAsString(requestDto);
+        System.out.println("--> 2" + body);
         when(itemService.addComment(id, requestDto, 1L)).thenReturn(comment);
         when(modelMapper.map(comment, ItemCommentResponseDto.class)).thenReturn(responseDto);
         String result = mvc.perform(post("/items/1/comment")
@@ -217,6 +230,26 @@ class ItemControllerTest {
 
         assertEquals(response, result);
         verify(modelMapper).map(comment, ItemCommentResponseDto.class);
+    }
+
+    @Test
+    @SneakyThrows
+    void create_empty_err() {
+        ItemComment comment = ItemComment.builder()
+                .text("")
+                .build();
+        ItemCommentRequestDto requestDto = ItemCommentRequestDto.builder()
+                .text("")
+                .build();
+        mapper.setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
+        String body = mapper.writeValueAsString(requestDto);
+        mvc.perform(post("/items/1/comment")
+                .header("X-Sharer-User-Id", id)
+                .content(body)
+                .characterEncoding(StandardCharsets.UTF_8)
+                .contentType(MediaType.APPLICATION_JSON)
+                .accept(MediaType.APPLICATION_JSON)
+        ).andExpect(status().is4xxClientError());
     }
 
     @Test
