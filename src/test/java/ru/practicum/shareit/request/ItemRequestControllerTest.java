@@ -68,6 +68,8 @@ class ItemRequestControllerTest {
         mapper.registerModule(new JavaTimeModule());
         String requestBody = mapper.writeValueAsString(requestDto);
         when(requestService.create(id, requestDto)).thenReturn(requestItem);
+        when(modelMapper.map(requestItem, RequestItemResponseDto.class))
+                .thenReturn(responsetItem);
 
         mvc.perform(post("/requests")
                 .header("X-Sharer-User-Id", id)
@@ -85,6 +87,8 @@ class ItemRequestControllerTest {
     @SneakyThrows
     void getAllRequests_ok() {
         when(requestService.getAll(id, Optional.empty(), Optional.empty())).thenReturn(List.of(requestItem));
+        when(modelMapper.map(requestItem, RequestItemResponseDto.class))
+                .thenReturn(responsetItem);
 
         mvc.perform(get("/requests/all")
                 .header("X-Sharer-User-Id", id)
@@ -101,6 +105,8 @@ class ItemRequestControllerTest {
     @SneakyThrows
     void getAllUserRequests_ok() {
         when(requestService.getAllUserItemRequests(id)).thenReturn(List.of(requestItem));
+        when(modelMapper.map(requestItem, RequestItemResponseDto.class))
+                .thenReturn(responsetItem);
         mvc.perform(get("/requests")
                 .header("X-Sharer-User-Id", id)
                 .characterEncoding(StandardCharsets.UTF_8)
