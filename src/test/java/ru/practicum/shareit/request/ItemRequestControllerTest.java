@@ -46,17 +46,13 @@ class ItemRequestControllerTest {
     @MockBean
     private UserService userService;
 
-    @Test
-    void getAllUserRequests() {
-    }
-
     private final ObjectMapper mapper = new ObjectMapper();
 
     private final long id = 1L;
 
-    RequestItemRequestDto requestDto = RequestItemRequestDto.builder().description("d").build();
-    RequestItem requestItem = RequestItem.builder().description("d").build();
-    RequestItemResponseDto responsetItem = RequestItemResponseDto.builder()
+    private RequestItemRequestDto requestDto = RequestItemRequestDto.builder().description("d").build();
+    private RequestItem requestItem = RequestItem.builder().description("d").build();
+    private RequestItemResponseDto responsetItem = RequestItemResponseDto.builder()
             .description("d")
             .items(new ArrayList<Item>())
             .build();
