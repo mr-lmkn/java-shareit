@@ -66,6 +66,30 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
             @Param("owner_Only") Boolean ownerOnly
     );
 
+    @Query(value = "SELECT b.* \n"
+            + "       FROM bookings b\n"
+            + "  LEFT JOIN items i \n"
+            + "         ON i.item_id = b.item_id  \n"
+            + "      WHERE (    (b.booker_user_id = :user_id and :owner_Only = false)\n"
+            + "              OR (i.owner_user_id  = :user_id and :owner_Only = true)) \n"
+            + "        AND (   :state = 'ALL' \n"
+            + "              OR ( :state = 'CURRENT'  and now() BETWEEN b.date_from AND b.date_end ) \n"
+            + "              OR ( :state = 'FUTURE'   and now() < b.date_from ) \n"
+            + "              OR ( :state = 'PAST'     and now() > b.date_end ) \n"
+            + "              OR ( :state = 'WAITING'  and b.status_id = 0 ) \n"
+            + "              OR ( :state = 'REJECTED' and b.status_id = 2)  \n"
+            + "            ) \n"
+            + "      ORDER BY date_end DESC"
+            + " LIMIT :size OFFSET :from",
+            nativeQuery = true)
+    List<Booking> getFromUserByStatePage(
+            @Param("user_id") long userId,
+            @Param("state") String state,
+            @Param("owner_Only") Boolean ownerOnly,
+            @Param("from") Integer from,
+            @Param("size") Integer size
+    );
+
     @Query(value = "SELECT b.* \n "
             + "      FROM bookings as b \n "
             + "      JOIN items as i "
@@ -73,12 +97,12 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
             + "     WHERE b.booker_user_id = :user_id \n "
             + "       AND i.item_id = :item_id \n "
             + "       AND b.status_id = 1 \n "
-            + "       AND b.date_end < :date_x \n ",
+            + "       AND b.date_end < now() ", //:date_x \n ",
             nativeQuery = true)
     List<Booking> findAllByUserBookings(
             @Param("user_id") long userId,
-            @Param("item_id") long itemId,
-            @Param("date_x") LocalDateTime dateX
+            @Param("item_id") long itemId
+         //   @Param("date_x") LocalDateTime dateX
     );
 
     List<Booking> findAllByItemInAndStatusOrderByStartAsc(List<Item> item, BookingStatus status);

@@ -11,10 +11,12 @@ import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.shareit.error.exceptions.BadRequestException;
 import ru.practicum.shareit.error.exceptions.NoContentException;
 import ru.practicum.shareit.user.dto.UserRequestDto;
+import ru.practicum.shareit.user.dto.UserResponseDto;
 import ru.practicum.shareit.user.model.User;
 import ru.practicum.shareit.user.storege.UserRepository;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -25,10 +27,12 @@ public class UserServiceImpl implements UserService {
     private final ModelMapper modelMapper;
 
     @Override
-    public List<User> getAllUsers() {
+    public List<UserResponseDto> getAllUsers() {
         log.info("Зарос всех пользователей");
         Sort sortById = Sort.by(Sort.Direction.ASC, "id");
-        return repository.findAll(sortById);
+        return repository.findAll(sortById).stream()
+                .map(p -> modelMapper.map(p, UserResponseDto.class))
+                .collect(Collectors.toList());
     }
 
     @Override
@@ -46,27 +50,28 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
-    public User createUser(UserRequestDto userRequestDto) throws BadRequestException {
-        log.info("Зарос создания пользователя");
-        User user = isUserDataExist(userRequestDto);
-        ArrayList<User> usersSameEmail = repository.findByEmailContainingIgnoreCase(user.getEmail());
-    /* Тесты хотят инкремент id ошибок при ошибке
-        String msg = String.format("Пользователь с e-mail %s уже существует.", user.getEmail());
-        log.info(msg);
-        throw new ConflictException(msg); <-- ConflictException
-    */
-        return repository.save(user);
+    public UserResponseDto getUserDtoById(Long id) throws NoContentException {
+        return modelMapper.map(getUserById(id), UserResponseDto.class);
     }
 
     @Override
     @Transactional
-    public User updateUser(Long id, UserRequestDto userRequestDto)
+    public UserResponseDto createUser(UserRequestDto userRequestDto) throws BadRequestException {
+        log.info("Зарос создания пользователя");
+        User user = isUserDataExist(userRequestDto);
+        ArrayList<User> usersSameEmail = repository.findByEmailContainingIgnoreCase(user.getEmail());
+        return modelMapper.map(repository.save(user), UserResponseDto.class);
+    }
+
+    @Override
+    @Transactional
+    public UserResponseDto updateUser(Long id, UserRequestDto userRequestDto)
             throws BadRequestException, NoContentException {
         log.info("Зарос обновления пользователя");
         User user = isUserDataExist(userRequestDto);
         user.setId(id);
         repository.partialUpdate(user.getEmail(), user.getName(), user.getId());
-        return getUserById(id);
+        return modelMapper.map(getUserById(id), UserResponseDto.class);
     }
 
     @Override

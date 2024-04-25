@@ -15,7 +15,6 @@ import ru.practicum.shareit.user.dto.UserResponseDto;
 import ru.practicum.shareit.user.service.UserService;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Slf4j
 @RestController
@@ -28,29 +27,27 @@ public class UserController {
     @GetMapping()
     public List<UserResponseDto> getAll() {
         log.info("Got all users request");
-        return users.getAllUsers().stream()
-                .map(p -> modelMapper.map(p, UserResponseDto.class))
-                .collect(Collectors.toList());
+        return users.getAllUsers();
     }
 
     @GetMapping(value = "/{id}")
     public UserResponseDto getUser(@PathVariable long id) throws NoContentException {
         log.info("Got user request");
-        return modelMapper.map(users.getUserById(id), UserResponseDto.class);
+        return users.getUserDtoById(id);
     }
 
     @PostMapping(consumes = "application/json;charset=UTF-8", produces = "application/json;")
     public UserResponseDto create(@Validated(GroupCreate.class) @RequestBody UserRequestDto user)
             throws BadRequestException, ConflictException, NoContentException {
         log.info("Got user create request: {}", user);
-        return modelMapper.map(users.createUser(user), UserResponseDto.class);
+        return users.createUser(user);
     }
 
     @PatchMapping(path = "/{id}", consumes = "application/json;charset=UTF-8", produces = "application/json;")
     public UserResponseDto update(@PathVariable long id, @Validated(GroupUpdate.class) @RequestBody UserRequestDto user)
             throws BadRequestException, NoContentException {
         log.info("Got update user id '{}' request: {}", id, user);
-        return modelMapper.map(users.updateUser(id, user), UserResponseDto.class);
+        return users.updateUser(id, user);
     }
 
     @DeleteMapping(value = "/{id}", produces = "application/json;")
