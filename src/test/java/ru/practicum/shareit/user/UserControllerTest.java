@@ -42,13 +42,11 @@ class UserControllerTest {
                 .build();
         userReq = UserRequestDto.builder().id(1L).email("xmail@mail.ru").name("User-name").build();
         userResp = UserResponseDto.builder().id(1L).email("xmail@mail.ru").name("User-name").build();
-
-        when(modelMapper.map(user, UserResponseDto.class)).thenReturn(userResp);
     }
 
     @Test
     void getAll() {
-        List<User> sample = List.of(user);
+        List<UserResponseDto> sample = List.of(userResp);
         when(userService.getAllUsers()).thenReturn(sample);
 
         List<UserResponseDto> reply = userController.getAll();
@@ -57,14 +55,14 @@ class UserControllerTest {
 
     @Test
     void create_ok() throws ConflictException, BadRequestException, NoContentException {
-        when(userService.createUser(userReq)).thenReturn(user);
+        when(userService.createUser(userReq)).thenReturn(userResp);
         UserResponseDto reply = userController.create(userReq);
         assertEquals(userResp, reply);
     }
 
     @Test
     void update_ok() throws ConflictException, BadRequestException, NoContentException {
-        when(userService.createUser(userReq)).thenReturn(user);
+        when(userService.createUser(userReq)).thenReturn(userResp);
         userController.create(userReq);
 
         User updatedUser = User.builder()

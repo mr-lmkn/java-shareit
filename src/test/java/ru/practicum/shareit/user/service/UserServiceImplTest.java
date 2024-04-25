@@ -15,6 +15,7 @@ import org.springframework.data.domain.Sort;
 import ru.practicum.shareit.error.exceptions.BadRequestException;
 import ru.practicum.shareit.error.exceptions.NoContentException;
 import ru.practicum.shareit.user.dto.UserRequestDto;
+import ru.practicum.shareit.user.dto.UserResponseDto;
 import ru.practicum.shareit.user.model.User;
 import ru.practicum.shareit.user.storege.UserRepository;
 
@@ -45,6 +46,7 @@ class UserServiceImplTest {
 
     private User user;
     private UserRequestDto userRequestDto;
+    private UserResponseDto userResonseDto;
     private final long userId = 1L;
 
     @BeforeEach
@@ -55,6 +57,11 @@ class UserServiceImplTest {
                 .name("User-name")
                 .build();
         userRequestDto = UserRequestDto.builder()
+                .id(userId)
+                .email("xmail@mail.ru")
+                .name("User-name")
+                .build();
+        userResonseDto = UserResponseDto.builder()
                 .id(userId)
                 .email("xmail@mail.ru")
                 .name("User-name")
@@ -82,8 +89,9 @@ class UserServiceImplTest {
         when(userRepository.findByEmailContainingIgnoreCase(anyString())).thenReturn(emptyUserList);
         when(userRepository.save(user)).thenReturn(user);
         when(modelMapper.map(userRequestDto, User.class)).thenReturn(user);
-        User ret = userService.createUser(userRequestDto);
-        assertEquals(user, ret);
+        when(modelMapper.map(user, UserResponseDto.class)).thenReturn(userResonseDto);
+        UserResponseDto ret = userService.createUser(userRequestDto);
+        assertEquals(userResonseDto, ret);
         verify(userRepository).save(user);
     }
 

@@ -149,7 +149,7 @@ class UserControllerFullTest {
                 .email("delete@mail.ru")
                 .name("to_delete")
                 .build();
-        User u = userService.createUser(requestUser2);
+        UserResponseDto u = userService.createUser(requestUser2);
 
         mvc.perform(delete("/users/" + u.getId())
                         .characterEncoding(StandardCharsets.UTF_8)
@@ -172,7 +172,7 @@ class UserControllerFullTest {
                 .email("madddl@mail.ru")
                 .name("userA")
                 .build();
-        User xUser = userService.createUser(userA);
+        UserResponseDto xUser = userService.createUser(userA);
         mvc.perform(get("/users/" + xUser.getId()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.name", is(userA.getName())))
