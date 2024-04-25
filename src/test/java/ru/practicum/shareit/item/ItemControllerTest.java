@@ -57,7 +57,7 @@ class ItemControllerTest {
     void getItem() {
         mvc.perform(get("/items/1").header("X-Sharer-User-Id", id))
                 .andExpect(status().isOk());
-        verify(itemService).getItemById(id, id);
+        verify(itemService).getItemDtoById(id, id);
     }
 
     @Test
@@ -96,12 +96,6 @@ class ItemControllerTest {
     @Test
     @SneakyThrows
     void create_ok() {
-        Item newItem = Item.builder()
-                .name("n")
-                .available(true)
-                .description("d")
-                .owner(User.builder().email("bbb@bb.ru").name("bbb").build())
-                .build();
         ItemRequestDto requestDto = ItemRequestDto.builder()
                 .name("n")
                 .description("d")
@@ -116,8 +110,7 @@ class ItemControllerTest {
                 .build();
         String response = mapper.writeValueAsString(responseDto);
         String body = mapper.writeValueAsString(requestDto);
-        when(itemService.createItem(id, requestDto)).thenReturn(newItem);
-        when(modelMapper.map(newItem, ItemResponseDto.class)).thenReturn(responseDto);
+        when(itemService.createItem(id, requestDto)).thenReturn(responseDto);
         String result = mvc.perform(post("/items")
                 .header("X-Sharer-User-Id", id)
                 .content(body)
@@ -127,27 +120,20 @@ class ItemControllerTest {
         ).andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
 
         assertEquals(response, result);
-        verify(modelMapper).map(newItem, ItemResponseDto.class);
     }
 
 
     @Test
     @SneakyThrows
     void getAllUserItems() {
-        Item newItem = Item.builder()
-                .name("n")
-                .available(true)
-                .description("d")
-                .owner(User.builder().email("bbb@bb.ru").name("bbb").build())
-                .build();
         ItemResponseDto responseDto = ItemResponseDto.builder()
                 .name("n")
                 .description("d")
                 .available(true)
                 .owner(id)
                 .build();
-        when(itemService.getAllUserItems(id, Optional.of(1), Optional.of(1))).thenReturn(List.of(newItem));
-        when(modelMapper.map(newItem, ItemResponseDto.class)).thenReturn(responseDto);
+        when(itemService.getAllUserItems(id, Optional.of(1), Optional.of(1)))
+                .thenReturn(List.of(responseDto));
         String result = mvc.perform(get("/items?userId=1&from=1&size=1")
                 .header("X-Sharer-User-Id", id)
                 .characterEncoding(StandardCharsets.UTF_8)
@@ -158,19 +144,12 @@ class ItemControllerTest {
         List<ItemResponseDto> resp = List.of(responseDto);
         String response = mapper.writeValueAsString(resp);
         assertEquals(response, result);
-        verify(modelMapper).map(newItem, ItemResponseDto.class);
     }
 
 
     @Test
     @SneakyThrows
     void getSerchItems() {
-        Item newItem = Item.builder()
-                .name("n")
-                .available(true)
-                .description("d")
-                .owner(User.builder().email("bbb@bb.ru").name("bbb").build())
-                .build();
         ItemResponseDto responseDto = ItemResponseDto.builder()
                 .name("n")
                 .description("d")
@@ -178,8 +157,7 @@ class ItemControllerTest {
                 .owner(id)
                 .build();
         when(itemService.searchItemByName(id, "fff", Optional.of(1), Optional.of(1)))
-                .thenReturn(List.of(newItem));
-        when(modelMapper.map(newItem, ItemResponseDto.class)).thenReturn(responseDto);
+                .thenReturn(List.of(responseDto));
         String result = mvc.perform(get("/items/search?text=fff&from=1&size=1")
                 .header("X-Sharer-User-Id", id)
                 .characterEncoding(StandardCharsets.UTF_8)
@@ -190,18 +168,11 @@ class ItemControllerTest {
         List<ItemResponseDto> resp = List.of(responseDto);
         String response = mapper.writeValueAsString(resp);
         assertEquals(response, result);
-        verify(modelMapper).map(newItem, ItemResponseDto.class);
     }
 
     @Test
     @SneakyThrows
     void create_comment_ok() {
-        ItemComment comment = ItemComment.builder()
-                .text("texttt")
-                .item(Item.builder().id(id).build())
-                .id(id)
-                .author(User.builder().id(id).build())
-                .build();
         ItemCommentRequestDto requestDto = ItemCommentRequestDto.builder()
                 .text("texttt")
                 .build();
@@ -218,8 +189,7 @@ class ItemControllerTest {
         mapper.setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
         String body = mapper.writeValueAsString(requestDto);
         System.out.println("--> 2" + body);
-        when(itemService.addComment(id, requestDto, 1L)).thenReturn(comment);
-        when(modelMapper.map(comment, ItemCommentResponseDto.class)).thenReturn(responseDto);
+        when(itemService.addComment(id, requestDto, 1L)).thenReturn(responseDto);
         String result = mvc.perform(post("/items/1/comment")
                 .header("X-Sharer-User-Id", id)
                 .content(body)
@@ -229,7 +199,6 @@ class ItemControllerTest {
         ).andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
 
         assertEquals(response, result);
-        verify(modelMapper).map(comment, ItemCommentResponseDto.class);
     }
 
     @Test
@@ -278,8 +247,9 @@ class ItemControllerTest {
                 .available(true)
                 .owner(id)
                 .build();
-        when(itemService.getAllUserItems(id, Optional.of(1), Optional.of(1))).thenReturn(List.of(newItem));
         when(modelMapper.map(newItem, ItemResponseDto.class)).thenReturn(responseDto);
+        when(itemService.getAllUserItems(id, Optional.of(1), Optional.of(1)))
+                .thenReturn(List.of(responseDto));
 
         mvc.perform(patch("/items/1")
                 .header("X-Sharer-User-Id", id)

@@ -19,6 +19,7 @@ import ru.practicum.shareit.item.comment.dto.ItemCommentResponseDto;
 import ru.practicum.shareit.item.comment.model.ItemComment;
 import ru.practicum.shareit.item.comment.storage.CommentRepository;
 import ru.practicum.shareit.item.dto.ItemRequestDto;
+import ru.practicum.shareit.item.dto.ItemResponseDto;
 import ru.practicum.shareit.item.model.Item;
 import ru.practicum.shareit.item.storage.ItemRepository;
 import ru.practicum.shareit.request.model.RequestItem;
@@ -47,7 +48,7 @@ public class ItemServiceImpl implements ItemService {
 
     @Override
     @Transactional
-    public List<Item> getAllUserItems(Long ownerId, Optional<Integer> from, Optional<Integer> size)
+    public List<ItemResponseDto> getAllUserItems(Long ownerId, Optional<Integer> from, Optional<Integer> size)
             throws NoContentException {
         ArrayList<Item> itemsList;
         if (from.isPresent() && size.isPresent()) {
@@ -79,8 +80,10 @@ public class ItemServiceImpl implements ItemService {
         return itemsList
                 .stream()
                 .map(item -> item.setCommentsReturn(comments.get(item.getId())))
-                .map(item -> setBookings(item, bookings.get(item.getId())))
-                .collect(toList());
+                .map(item -> setBookingsDto(item, bookings.get(item.getId())))
+                //.collect(toList())
+                .map(item -> modelMapper.map(item, ItemResponseDto.class))
+                .collect(Collectors.toList());
 
     }
 
@@ -93,23 +96,22 @@ public class ItemServiceImpl implements ItemService {
             log.info(msg);
             throw new NoContentException(msg);
         }
-        Item ret = items.get();
+        return items.get();
+    }
+
+    @Override
+    public ItemResponseDto getItemDtoById(Long id, Long userId) throws NoContentException {
+        Item ret = getItemById(id, userId);
         boolean isOwner = Objects.equals(ret.getOwner().getId(), userId);
-
-        List<ItemCommentResponseDto> comments = getAllItemComments(id)
-                .stream()
-                .map(itemComment -> modelMapper.map(itemComment, ItemCommentResponseDto.class))
-                .collect(Collectors.toList());
+        List<ItemCommentResponseDto> comments = getAllItemComments(id);
         ret.setComments(comments);
-
         if (isOwner) {
             List<Booking> bookings = bookingRepository
                     .findAllByItemAndStatusOrderByEndAsc(ret, APPROVED);
-            ret = setBookings(ret, bookings);
+            ret = setBookingsDto(ret, bookings);
             log.info("----> add bookings {} ", ret.toString());
         }
-
-        return ret;
+        return modelMapper.map(ret, ItemResponseDto.class);
     }
 
     @Override
@@ -124,8 +126,8 @@ public class ItemServiceImpl implements ItemService {
 
     @Override
     @Transactional
-    public Item setBookings(Item item, List<Booking> bookings) {
-        log.info(" setBookings ---> ComeIn ");
+    public Item setBookingsDto(Item item, List<Booking> bookings) {
+        log.info(" setBookingsDto ---> ComeIn ");
         if (Objects.isNull(bookings)) return item;
         LocalDateTime now = LocalDateTime.now();
 
@@ -153,7 +155,7 @@ public class ItemServiceImpl implements ItemService {
 
     @Override
     @Transactional
-    public Item createItem(Long userId, ItemRequestDto itemRequestDto)
+    public ItemResponseDto createItem(Long userId, ItemRequestDto itemRequestDto)
             throws BadRequestException, NoContentException {
         if (Objects.nonNull(itemRequestDto)) {
             User user = userService.getUserById(userId);
@@ -168,7 +170,7 @@ public class ItemServiceImpl implements ItemService {
                     log.info(msg);
                     item.setRequestId(requestId);
                 }
-                return itemRepository.save(item);
+                return modelMapper.map(itemRepository.save(item), ItemResponseDto.class);
             }
             String msg = String.format("Нет пользователя с 'id' %s.", userId);
             log.info(msg);
@@ -181,7 +183,7 @@ public class ItemServiceImpl implements ItemService {
 
     @Override
     @Transactional
-    public Item updateItem(Long userID, Long itemId, ItemRequestDto itemRequestDto)
+    public ItemResponseDto updateItem(Long userID, Long itemId, ItemRequestDto itemRequestDto)
             throws BadRequestException, NoContentException {
         if (Objects.nonNull(itemId) && itemId > 0) {
             Item item = modelMapper.map(itemRequestDto, Item.class);
@@ -193,7 +195,7 @@ public class ItemServiceImpl implements ItemService {
                     userID);
             if (updaterRows > 0) {
                 log.info("Операция выполнена уcпешно");
-                return itemRepository.findById(itemId).get();
+                return modelMapper.map(itemRepository.findById(itemId).get(), ItemResponseDto.class);
             } else {
                 String msg = String
                         .format("Нет вещи с 'id' %s или вещь не принадлежит пользователю. Обновление не возможно.",
@@ -215,22 +217,26 @@ public class ItemServiceImpl implements ItemService {
 
     @Override
     @Transactional
-    public List<Item> searchItemByName(
+    public List<ItemResponseDto> searchItemByName(
             Long userId, String text,
             Optional<Integer> from,
             Optional<Integer> size
     ) {
+        List<Item> itemList = new ArrayList<>();
         if (!text.isEmpty() && (from.isEmpty() || size.isEmpty())) {
-            return itemRepository.findUserItemLike(text, text);
+            itemList = itemRepository.findUserItemLike(text, text);
         } else if (!text.isEmpty() && from.isPresent() && size.isPresent()) {
-            return itemRepository.findUserItemLikePage(text, text, from.get(), size.get());
+            itemList = itemRepository.findUserItemLikePage(text, text, from.get(), size.get());
         }
-        return new ArrayList<>();
+
+        return itemList.stream()
+                .map(item -> modelMapper.map(item, ItemResponseDto.class))
+                .collect(Collectors.toList());
     }
 
     @Override
     @Transactional
-    public ItemComment addComment(Long userId, ItemCommentRequestDto inComment, Long itemId)
+    public ItemCommentResponseDto addComment(Long userId, ItemCommentRequestDto inComment, Long itemId)
             throws NoContentException, BadRequestException {
         User user = userService.getUserById(userId);
         Item item = getItemById(itemId, userId);
@@ -245,13 +251,16 @@ public class ItemServiceImpl implements ItemService {
             log.info(msg);
             throw new BadRequestException(msg);
         }
-        return commentsRepository.save(itemComment);
+        return modelMapper.map(commentsRepository.save(itemComment), ItemCommentResponseDto.class);
     }
 
     @Override
     @Transactional
-    public List<ItemComment> getAllItemComments(Long itemId) {
-        return commentsRepository.findAllByItemId(itemId);
+    public List<ItemCommentResponseDto> getAllItemComments(Long itemId) {
+        return commentsRepository.findAllByItemId(itemId)
+                .stream()
+                .map(itemComment -> modelMapper.map(itemComment, ItemCommentResponseDto.class))
+                .collect(Collectors.toList());
     }
 
 }

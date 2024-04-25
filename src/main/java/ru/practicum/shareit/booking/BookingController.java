@@ -15,7 +15,6 @@ import javax.validation.constraints.Min;
 import javax.validation.constraints.Positive;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 @Slf4j
 @RestController
@@ -31,7 +30,7 @@ public class BookingController {
                                   @Valid @RequestBody BookingRequestDto bookingRequestDto)
             throws NoContentException, BadRequestException {
         log.info("Got booking add request {}", bookingRequestDto);
-        return modelMapper.map(bookingService.add(userId, bookingRequestDto), BookingResponseDto.class);
+        return bookingService.add(userId, bookingRequestDto);
     }
 
     @PatchMapping(path = "/{bookingId}")
@@ -41,8 +40,7 @@ public class BookingController {
             throws NoContentException, BadRequestException {
         log.info("Got booking approve update request userId = {}, bookingId = {}, approved = {}",
                 userId, bookingId, approved);
-        return modelMapper.map(bookingService
-                .setState(userId, bookingId, approved), BookingResponseDto.class);
+        return bookingService.setState(userId, bookingId, approved);
     }
 
 
@@ -66,10 +64,7 @@ public class BookingController {
     ) throws NoContentException, BadRequestException {
         log.info("Got booking by state request from userId = {}, state = {}, from = {}, size = {}",
                 userId, state, from, size);
-        return bookingService.getFromUserByRequest(userId, state, false, from, size)
-                .stream()
-                .map(Booking -> modelMapper.map(Booking, BookingResponseDto.class))
-                .collect(Collectors.toList());
+        return bookingService.getFromUserByRequest(userId, state, false, from, size);
     }
 
     @GetMapping(path = "/owner")
@@ -83,10 +78,7 @@ public class BookingController {
             @RequestParam(value = "size", required = false) Optional<Integer> size
     ) throws NoContentException, BadRequestException {
         log.info("Got booking by state request from owner id = {}, state = {}", userId, state);
-        return bookingService.getFromUserByRequest(userId, state, true, from, size)
-                .stream()
-                .map(Booking -> modelMapper.map(Booking, BookingResponseDto.class))
-                .collect(Collectors.toList());
+        return bookingService.getFromUserByRequest(userId, state, true, from, size);
     }
 
 }

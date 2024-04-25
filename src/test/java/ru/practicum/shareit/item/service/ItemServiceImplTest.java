@@ -9,6 +9,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.modelmapper.ModelMapper;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
+import ru.practicum.shareit.booking.dto.BookingResponseDto;
+import ru.practicum.shareit.booking.dto.BookingShortResponseDto;
 import ru.practicum.shareit.booking.model.Booking;
 import ru.practicum.shareit.booking.storage.BookingRepository;
 import ru.practicum.shareit.error.exceptions.BadRequestException;
@@ -18,6 +20,7 @@ import ru.practicum.shareit.item.comment.dto.ItemCommentResponseDto;
 import ru.practicum.shareit.item.comment.model.ItemComment;
 import ru.practicum.shareit.item.comment.storage.CommentRepository;
 import ru.practicum.shareit.item.dto.ItemRequestDto;
+import ru.practicum.shareit.item.dto.ItemResponseDto;
 import ru.practicum.shareit.item.model.Item;
 import ru.practicum.shareit.item.storage.ItemRepository;
 import ru.practicum.shareit.request.storage.RequestRepository;
@@ -29,6 +32,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+import static java.time.LocalDateTime.now;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -53,9 +57,22 @@ class ItemServiceImplTest {
     private ItemServiceImpl itemService;
 
     private long id = 1L;
-    private User user = User.builder().id(id).email("xxx@mm.eee").build();
-    private Item itemModel = Item.builder().id(1L).owner(user).available(true).build();
-    private ItemRequestDto itemRequestDto = ItemRequestDto.builder().owner(id).id(id).available(true).build();
+    private final User user = User.builder().id(id).email("xxx@mm.eee").build();
+    private final Item itemModel = Item.builder()
+            .id(id)
+            .owner(user)
+            .available(true)
+            .lastBooking(new BookingResponseDto())
+            .nextBooking(new BookingResponseDto())
+            .build();
+    private final ItemRequestDto itemRequestDto = ItemRequestDto.builder().owner(id).id(id).available(true).build();
+    private final ItemResponseDto itemResponseDto = ItemResponseDto.builder()
+            .id(id)
+            .owner(id)
+            .available(true)
+            .lastBooking(new BookingShortResponseDto())
+            .nextBooking(new BookingShortResponseDto())
+            .build();
 
     @Test
     @SneakyThrows
@@ -65,8 +82,9 @@ class ItemServiceImplTest {
         when(userService.getUserById(id)).thenReturn(user);
         when(modelMapper.map(itemRequestDto, Item.class)).thenReturn(itemModel2);
         when(itemRepository.save(itemModel2)).thenReturn(itemModel2);
-        Item createdItem = itemService.createItem(id, itemRequestDto);
-        assertEquals(itemModel2, createdItem);
+        when(modelMapper.map(itemModel2, ItemResponseDto.class)).thenReturn(itemResponseDto);
+        ItemResponseDto createdItem = itemService.createItem(id, itemRequestDto);
+        assertEquals(itemResponseDto, createdItem);
     }
 
     @Test
@@ -75,9 +93,10 @@ class ItemServiceImplTest {
         ItemRequestDto itemRequestDto = ItemRequestDto.builder().build();
         when(userService.getUserById(id)).thenReturn(user);
         when(modelMapper.map(itemRequestDto, Item.class)).thenReturn(itemModel);
+        when(modelMapper.map(itemModel, ItemResponseDto.class)).thenReturn(itemResponseDto);
         when(itemRepository.save(itemModel)).thenReturn(itemModel);
-        Item createdItem = itemService.createItem(id, itemRequestDto);
-        assertEquals(itemModel, createdItem);
+        ItemResponseDto createdItem = itemService.createItem(id, itemRequestDto);
+        assertEquals(itemResponseDto, createdItem);
     }
 
     @Test
@@ -110,23 +129,27 @@ class ItemServiceImplTest {
     @SneakyThrows
     void updateItem_ok() {
         when(modelMapper.map(itemRequestDto, Item.class)).thenReturn(itemModel);
+        when(modelMapper.map(itemModel, ItemResponseDto.class)).thenReturn(itemResponseDto);
         when(itemRepository.partialUpdate(null, null, true, 1L, 1L))
                 .thenReturn(1);
         when(itemRepository.findById(id)).thenReturn(Optional.of(itemModel));
-        Item updated = itemService.updateItem(id, id, itemRequestDto);
-        assertEquals(itemModel, updated);
+        ItemResponseDto updated = itemService.updateItem(id, id, itemRequestDto);
+        assertEquals(itemResponseDto, updated);
     }
 
     @Test
     @SneakyThrows
     void addComment() {
         ItemCommentRequestDto inComment = ItemCommentRequestDto.builder().text("dd").build();
-        when(modelMapper.map(inComment, ItemComment.class))
-                .thenReturn(ItemComment.builder().text("dd").build());
+        ItemComment comment = ItemComment.builder().text("dd").build();
+        ItemCommentResponseDto outComment = ItemCommentResponseDto.builder().text("dd").build();
+        when(modelMapper.map(inComment, ItemComment.class)).thenReturn(comment);
+        when(modelMapper.map(comment, ItemCommentResponseDto.class)).thenReturn(outComment);
         when(bookingRepository.findAllByUserBookings(anyLong(), anyLong())).thenReturn(List.of(new Booking()));
         when(itemRepository.findById(id)).thenReturn(Optional.of(itemModel));
-        ItemComment itemComment = itemService.addComment(id, inComment, id);
-        assertEquals(1, 1);
+        when(commentRepository.save(comment)).thenReturn(comment);
+        ItemCommentResponseDto newItemComment = itemService.addComment(id, inComment, id);
+        assertEquals(outComment.getItemId(), newItemComment.getItemId());
     }
 
     @Test
@@ -158,7 +181,7 @@ class ItemServiceImplTest {
         when(modelMapper.map(itemComment, ItemCommentResponseDto.class))
                 .thenReturn(itemCommentResponseDto);
         // add booking
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = now();
         Booking booking = Booking.builder().item(item)
                 .start(now)
                 .end(now)
@@ -175,7 +198,7 @@ class ItemServiceImplTest {
     @Test
     @SneakyThrows
     void searchItemByName_no_text() {
-        List<Item> ret = itemService.searchItemByName(id, "", Optional.of(1), Optional.of(1));
+        List<ItemResponseDto> ret = itemService.searchItemByName(id, "", Optional.of(1), Optional.of(1));
         assertEquals(0, ret.size());
     }
 
@@ -187,7 +210,7 @@ class ItemServiceImplTest {
         when(itemRepository
                 .findUserItemLikePage("srch", "srch", 1, 1))
                 .thenReturn(itemsList);
-        List<Item> ret = itemService.searchItemByName(id, "srch", Optional.of(1), Optional.of(1));
+        List<ItemResponseDto> ret = itemService.searchItemByName(id, "srch", Optional.of(1), Optional.of(1));
         assertEquals(1, ret.size());
     }
 
@@ -197,7 +220,7 @@ class ItemServiceImplTest {
         ArrayList<Item> itemsList = new ArrayList<>();
         itemsList.add(new Item());
         when(itemRepository.findUserItemLike("srch", "srch")).thenReturn(itemsList);
-        List<Item> ret = itemService.searchItemByName(id, "srch", Optional.empty(), Optional.empty());
+        List<ItemResponseDto> ret = itemService.searchItemByName(id, "srch", Optional.empty(), Optional.empty());
         assertEquals(1, ret.size());
     }
 
@@ -210,7 +233,53 @@ class ItemServiceImplTest {
 
     @Test
     @SneakyThrows
-    void getItemById_delete_ok() {
+    void getItemDtoById_ok() {
+        ItemComment comment = new ItemComment();
+        BookingResponseDto bookingDto = BookingResponseDto.builder()
+                .start(now().toString()).end(now().toString()).build();
+        BookingShortResponseDto bookingShortDto = BookingShortResponseDto.builder()
+                .start(now().toString()).end(now().toString()).build();
+        Item item = Item.builder()
+                .id(id)
+                .owner(user)
+                .available(true)
+                .lastBooking(bookingDto)
+                .nextBooking(bookingDto)
+                .comments(List.of(new ItemCommentResponseDto()))
+                .build();
+        ItemResponseDto waitResponse = ItemResponseDto.builder()
+                .id(id)
+                .owner(user.getId())
+                .available(true)
+                .lastBooking(bookingShortDto)
+                .nextBooking(bookingShortDto)
+                .comments(List.of(new ItemCommentResponseDto()))
+                .build();
+        when(itemRepository.findById(id)).thenReturn(Optional.of(item));
+        when(commentRepository.findAllByItemId(id)).thenReturn(List.of(comment));
+        when(modelMapper.map(comment, ItemCommentResponseDto.class)).thenReturn(new ItemCommentResponseDto());
+        when(modelMapper.map(item, ItemResponseDto.class)).thenReturn(waitResponse);
+        assertEquals(true, itemService.getItemDtoById(id, id).getAvailable());
+    }
+
+    @Test
+    @SneakyThrows
+    void deleteItem_ok() {
         itemService.delete(id, id);
     }
+
+    @Test
+    @SneakyThrows
+    void getAllByRequestId() {
+        when(itemRepository.findAllByRequestId(id)).thenReturn(new ArrayList<Item>());
+        itemService.getAllByRequestId(id);
+    }
+
+    @Test
+    @SneakyThrows
+    void getAllByRequestIdNotNull() {
+        when(itemRepository.findAllByRequestIdNotNull()).thenReturn(new ArrayList<Item>());
+        itemService.getAllByRequestIdNotNull();
+    }
+
 }

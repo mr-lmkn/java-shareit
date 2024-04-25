@@ -8,6 +8,7 @@ import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.shareit.booking.dto.BookingRequestDto;
+import ru.practicum.shareit.booking.dto.BookingResponseDto;
 import ru.practicum.shareit.booking.enums.BookingRequestStatus;
 import ru.practicum.shareit.booking.enums.BookingStatus;
 import ru.practicum.shareit.booking.model.Booking;
@@ -24,6 +25,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Repository
@@ -38,7 +40,7 @@ public class BookingServiceImpl implements BookingService {
 
     @Override
     @Transactional
-    public Booking getById(Long bookingId) throws NoContentException, BadRequestException {
+    public Booking getById(Long bookingId) throws NoContentException {
         if (bookingRepository.existsById(bookingId)) {
             return bookingRepository.findById(bookingId).get();
         }
@@ -49,7 +51,13 @@ public class BookingServiceImpl implements BookingService {
 
     @Override
     @Transactional
-    public Booking add(Long userId, BookingRequestDto bookingRequestDto)
+    public BookingResponseDto getDtoById(Long bookingId) throws NoContentException {
+        return modelMapper.map(getById(bookingId), BookingResponseDto.class);
+    }
+
+    @Override
+    @Transactional
+    public BookingResponseDto add(Long userId, BookingRequestDto bookingRequestDto)
             throws NoContentException, BadRequestException {
         Item item = itemService.getItemById(bookingRequestDto.getItemId(), userId);
         User booker = userService.getUserById(userId);
@@ -82,13 +90,13 @@ public class BookingServiceImpl implements BookingService {
             msg = String.format("Создание бронирования id=%s, status=%s, start=%s, end=%s",
                     saved.getId(), saved.getStatus(), saved.getStart(), saved.getEnd());
             log.info(msg);
-            return bookingRepository.findById(saved.getId()).orElse(null);
+            return getDtoById(saved.getId());
         }
     }
 
     @Override
     @Transactional
-    public Booking setState(Long userId, Long bookingId, String state)
+    public BookingResponseDto setState(Long userId, Long bookingId, String state)
             throws BadRequestException, NoContentException {
         Booking booking = getById(bookingId);
         BookingStatus status = getStateByUser(booking, userId, state);
@@ -104,15 +112,16 @@ public class BookingServiceImpl implements BookingService {
         }
         bookingRepository.updateStatus(status.ordinal(), bookingId, userId);
         entityManager.clear();
-        return getById(bookingId);
+        return getDtoById(bookingId);
     }
 
     @Override
     @Transactional
-    public Booking getFromBookerOrOwner(long userId, long bookingId) throws BadRequestException, NoContentException {
+    public BookingResponseDto getFromBookerOrOwner(long userId, long bookingId)
+            throws NoContentException {
         Booking booking = getById(bookingId);
         if (booking.getBooker().getId() == userId || booking.getItem().getOwner().getId() == userId) {
-            return booking;
+            return modelMapper.map(booking, BookingResponseDto.class);
         }
         String msg = "Нет доступа";
         log.info(msg);
@@ -121,19 +130,27 @@ public class BookingServiceImpl implements BookingService {
 
     @Override
     @Transactional
-    public List<Booking> getFromUserByRequest(
+    public List<BookingResponseDto> getFromUserByRequest(
             long userId, String state, Boolean ownerOnly,
             Optional<Integer> from,
             Optional<Integer> size
     ) throws BadRequestException, NoContentException {
-        User user = userService.getUserById(userId);
-        String strState = String.valueOf(BookingRequestStatus.getValue(state));
-        if (from.isEmpty() || size.isEmpty()) {
-            return bookingRepository.getFromUserByState(userId, strState, ownerOnly);
-        } else if (from.get() > 0 && size.get() > 0) {
-            return bookingRepository.getFromUserByStatePage(userId, strState, ownerOnly, from.get(), size.get());
+        if (from.orElse(1) <= 0 || size.orElse(1) <= 0) {
+            throw new BadRequestException("Нет такой страницы");
         }
-        throw new BadRequestException("Нет такой страницы");
+        String strState = String.valueOf(BookingRequestStatus.getValue(state));
+        List<Booking> bookingList;
+        User user = userService.getUserById(userId);
+        if (from.isEmpty() || size.isEmpty()) {
+            bookingList = bookingRepository.getFromUserByState(userId, strState, ownerOnly);
+        } else {
+            bookingList = bookingRepository.getFromUserByStatePage(userId, strState, ownerOnly, from.get(), size.get());
+        }
+
+        return bookingList.stream()
+                .map(Booking -> modelMapper.map(Booking, BookingResponseDto.class))
+                .collect(Collectors.toList());
+
     }
 
     @Override

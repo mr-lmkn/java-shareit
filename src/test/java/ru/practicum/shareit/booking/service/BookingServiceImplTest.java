@@ -8,17 +8,20 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.modelmapper.ModelMapper;
 import ru.practicum.shareit.booking.dto.BookingRequestDto;
+import ru.practicum.shareit.booking.dto.BookingResponseDto;
 import ru.practicum.shareit.booking.enums.BookingStatus;
 import ru.practicum.shareit.booking.model.Booking;
 import ru.practicum.shareit.booking.storage.BookingRepository;
 import ru.practicum.shareit.error.exceptions.BadRequestException;
 import ru.practicum.shareit.error.exceptions.NoContentException;
 import ru.practicum.shareit.item.comment.storage.CommentRepository;
+import ru.practicum.shareit.item.dto.ItemResponseDto;
 import ru.practicum.shareit.item.model.Item;
 import ru.practicum.shareit.item.service.ItemService;
 import ru.practicum.shareit.item.storage.ItemRepository;
 import ru.practicum.shareit.request.service.RequestServiceImpl;
 import ru.practicum.shareit.request.storage.RequestRepository;
+import ru.practicum.shareit.user.dto.UserResponseDto;
 import ru.practicum.shareit.user.model.User;
 import ru.practicum.shareit.user.service.UserService;
 
@@ -70,6 +73,11 @@ class BookingServiceImplTest {
             .build();
     private final BookingRequestDto bookingRequestDto = BookingRequestDto.builder()
             .itemId(id)
+            .build();
+
+    private final BookingResponseDto bookingResponseDto = BookingResponseDto.builder()
+            .id(id).start(from.toString()).end(to.toString())
+            .item(new ItemResponseDto()).booker(new UserResponseDto())
             .build();
 
     @Test
@@ -126,9 +134,12 @@ class BookingServiceImplTest {
         when(itemService.getItemById(id, id2)).thenReturn(item);
         when(userService.getUserById(id2)).thenReturn(User.builder().id(id2).build());
         when(modelMapper.map(bookingRequestDto, Booking.class)).thenReturn(booking);
+        when(modelMapper.map(booking, BookingResponseDto.class)).thenReturn(bookingResponseDto);
         when(bookingService.isBookingAvailable(id, from, to)).thenReturn(true);
         when(bookingRepository.save(booking)).thenReturn(booking);
+        when(bookingRepository.existsById(id)).thenReturn(true);
         when(bookingRepository.findById(id)).thenReturn(Optional.of(booking));
+        when(bookingService.getDtoById(id)).thenReturn(bookingResponseDto);
         assertEquals(id, bookingService.add(id2, bookingRequestDto).getId());
     }
 
@@ -193,8 +204,9 @@ class BookingServiceImplTest {
                 .build();
         when(bookingRepository.existsById(1L)).thenReturn(true);
         when(bookingRepository.findById(1L)).thenReturn(Optional.ofNullable(booking));
+        when(modelMapper.map(booking, BookingResponseDto.class)).thenReturn(bookingResponseDto);
 
-        Booking updBooking = bookingService.setState(1L, 1L, "true");
+        BookingResponseDto updBooking = bookingService.setState(1L, 1L, "true");
 
         assertEquals(1L, updBooking.getId());
     }
@@ -209,8 +221,8 @@ class BookingServiceImplTest {
                 .build();
         when(bookingRepository.existsById(id)).thenReturn(true);
         when(bookingRepository.findById(id)).thenReturn(Optional.ofNullable(booking));
-
-        Booking updBooking = bookingService.getFromBookerOrOwner(id, id);
+        when(modelMapper.map(booking, BookingResponseDto.class)).thenReturn(bookingResponseDto);
+        BookingResponseDto updBooking = bookingService.getFromBookerOrOwner(id, id);
         assertEquals(id, updBooking.getId());
     }
 
@@ -327,7 +339,6 @@ class BookingServiceImplTest {
     @Test
     @SneakyThrows
     void getFromUserByRequest_page_err() {
-        when(userService.getUserById(id)).thenReturn(user);
         assertThrows(BadRequestException.class,
                 () -> bookingService.getFromUserByRequest(id, "WAITING",
                         true, Optional.of(-1), Optional.of(-1)
