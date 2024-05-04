@@ -136,7 +136,9 @@ public class BookingServiceImpl implements BookingService {
             Optional<Integer> size
     ) throws BadRequestException, NoContentException {
         if (from.orElse(1) <= 0 || size.orElse(1) <= 0) {
-            throw new BadRequestException("Нет такой страницы");
+            String msg = "Нет такой страницы";
+            log.info(msg);
+            throw new BadRequestException(msg);
         }
         String strState = String.valueOf(BookingRequestStatus.getValue(state));
         List<Booking> bookingList;

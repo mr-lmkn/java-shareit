@@ -81,7 +81,6 @@ public class ItemServiceImpl implements ItemService {
                 .stream()
                 .map(item -> item.setCommentsReturn(comments.get(item.getId())))
                 .map(item -> setBookingsDto(item, bookings.get(item.getId())))
-                //.collect(toList())
                 .map(item -> modelMapper.map(item, ItemResponseDto.class))
                 .collect(Collectors.toList());
 
