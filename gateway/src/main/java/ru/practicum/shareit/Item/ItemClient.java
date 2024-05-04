@@ -39,7 +39,7 @@ public class ItemClient extends BaseClient {
             String msg = "Нет такой страницы";
             throw new BadRequestException(msg);
         }
-        if (from.isPresent() & size.isPresent()) {
+        if (from.isPresent() && size.isPresent()) {
             parameters = Map.of(
                     "from", from.get(),
                     "size", size.get()

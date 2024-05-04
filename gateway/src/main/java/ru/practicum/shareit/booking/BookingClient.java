@@ -48,7 +48,7 @@ public class BookingClient extends BaseClient {
             throw new BadRequestException(msg);
         }
 
-        if (from.isPresent() & size.isPresent()) {
+        if (from.isPresent() && size.isPresent()) {
             parameters = Map.of(
                     "state", state.name(),
                     "from", from.get(),
