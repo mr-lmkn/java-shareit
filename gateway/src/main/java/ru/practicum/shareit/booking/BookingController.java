@@ -79,36 +79,4 @@ public class BookingController {
                 userId, bookingId, approved);
         return bookingClient.setState(userId, bookingId, approved);
     }
-/*
-    @GetMapping()
-    public ResponseEntity<Object> getFromUser(
-            @RequestHeader(OWNER_ID_HOLDER) long userId,
-            @RequestParam(value = "state", required = false) String state,
-            @RequestParam(value = "from", required = false)
-            @Min(value = 0, message = "The value must be positive")
-            Optional<Integer> from,
-            @Positive
-            @RequestParam(value = "size", required = false) Optional<Integer> size
-    ) throws BadRequestException {
-        log.info("Got booking by state request from userId = {}, state = {}, from = {}, size = {}",
-                userId, state, from, size);
-        BookingRequestStatus stateBRS = BookingRequestStatus.getValue(state);
-        return bookingClient.getFromUser(userId, stateBRS, from, size);
-    }
-
-    @GetMapping(path = "/owner")
-    public ResponseEntity<Object> getFromOwner(
-            @RequestHeader(OWNER_ID_HOLDER) long userId,
-            @RequestParam(value = "state", required = false) String state,
-            @RequestParam(value = "from", required = false)
-            @Min(value = 0, message = "The value must be positive")
-            Optional<Integer> from,
-            @Positive
-            @RequestParam(value = "size", required = false) Optional<Integer> size
-    ) throws BadRequestException {
-        log.info("Got booking by state request from owner id = {}, state = {}", userId, state);
-        BookingRequestStatus stateBRS = BookingRequestStatus.getValue(state);
-        return bookingClient.getFromOwner(userId, stateBRS, from, size);
-    }
-*/
 }

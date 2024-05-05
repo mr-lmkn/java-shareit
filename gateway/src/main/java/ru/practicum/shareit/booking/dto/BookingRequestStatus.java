@@ -29,6 +29,8 @@ public enum BookingRequestStatus {
                     return BookingRequestStatus.REJECTED;
                 case ("waiting"):
                     return BookingRequestStatus.WAITING;
+                default:
+                    break;
             }
         } else {
             return BookingRequestStatus.ALL;

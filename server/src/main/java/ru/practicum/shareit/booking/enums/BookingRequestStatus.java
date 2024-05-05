@@ -30,13 +30,14 @@ public enum BookingRequestStatus {
                     return BookingRequestStatus.REJECTED;
                 case ("waiting"):
                     return BookingRequestStatus.WAITING;
+                default:
+                    break;
             }
         } else {
             return BookingRequestStatus.ALL; //state = "null";
         }
         String msg = String.format("Unknown state: %s", state);
         log.info("Зарос {} недопустим", state);
-        throw new BadRequestException(msg); //--400 не подходит для Booking get all for wrong user 100
-        //throw new NoContentException(msg);
+        throw new BadRequestException(msg);
     }
 }
